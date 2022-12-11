@@ -119,7 +119,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Kevinbot Passthrough")
-        self.setWindowIcon(QIcon("passthrough.svg"))
+        self.setWindowIcon(QIcon("icon.svg"))
 
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
