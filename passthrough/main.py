@@ -7,6 +7,7 @@ import threading
 import serial
 import speech
 import time
+import os
 
 XB_SERIAL_PORT   = "/dev/ttyS0"
 XB_BAUD_RATE     = 230400
@@ -32,6 +33,8 @@ remote_name = None
 remote_status = "disconnected"
 
 speech_engine = "espeak"
+
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 class bcolors:
     HEADER = '\033[95m'
@@ -99,16 +102,16 @@ def loop():
                     elif command == "no-pass.remote.status":
                         remote_status = value.strip()
                         if remote_status == "disconnected":
-                            win.icon.setPixmap(QPixmap("network-disconnected.svg"))
+                            win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-disconnected.svg")))
                             win.status.setText("Remote is Disconnected")
                         elif remote_status == "connected":
-                            win.icon.setPixmap(QPixmap("network-connected.svg"))
+                            win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-connected.svg")))
                             if remote_name:
                                 win.status.setText(f"Connected to \"{remote_name}\"")
                             else:
                                 win.status.setText("Connected to \"UNKNOWN\"")
                         elif remote_status == "error":
-                            win.icon.setPixmap(QPixmap("network-error.svg"))
+                            win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-error.svg")))
                     elif command == "no-pass.remote.name":
                         remote_name = value.strip()
                         win.status.setText(f"Connected to \"{remote_name}\"")
@@ -119,7 +122,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Kevinbot Passthrough")
-        self.setWindowIcon(QIcon("icon.svg"))
+        self.setWindowIcon(QIcon(os.path.join(CURRENT_DIR, "icon.svg")))
 
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
@@ -140,7 +143,7 @@ class MainWindow(QMainWindow):
         self.main_layout.addStretch()
 
         self.icon = QLabel()
-        self.icon.setPixmap(QPixmap("network-disconnected.svg"))
+        self.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-disconnected.svg")))
         self.icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(self.icon)
         
