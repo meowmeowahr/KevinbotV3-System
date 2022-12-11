@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kevinbot Streamer</title>
+    <style>
+	body {
+	    margin: unset;
+	}
+	
+	.image {
+	    display: flex;
+	    background-image: url("{{ url_for('video_feed') }}");
+	    background-size: contain;
+	    background-repeat: no-repeat;
+	    background-position: center;
+	    height: 100vh;
+	}
+    </style>
+  </head>
+  <body>
+    <div class="image"></div>
+  </body>
+</html>
