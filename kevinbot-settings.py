@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from KevinbotUI import AboutBox
 from settings_panels import ThemePanel, SysInfoPanel
 import os
 import sys
@@ -51,7 +50,7 @@ class MainWindow(QMainWindow):
 
         self.sysinfo_button = QToolButton()
         self.sysinfo_button.setObjectName("Kevinbot3_Settings_Panel_Button")
-        self.sysinfo_button.setText(" " +SysInfoPanel.name)
+        self.sysinfo_button.setText(" " + SysInfoPanel.name)
         self.sysinfo_button.setIconSize(QSize(24, 24))
         self.sysinfo_button.setFixedWidth(128)
         self.sysinfo_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)

@@ -11,7 +11,7 @@ SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
 
 settings = json.load(open(SETTINGS_PATH, 'r'))
 
-def save_settings():
+def save_json():
     with open(SETTINGS_PATH, 'w') as f:
         json.dump(settings, f, indent=4)
 
@@ -104,4 +104,4 @@ class SysInfoPanel(QWidget):
 
     def update_interval_changed(self):
         settings["sysinfo"]["interval"] = self.update_interval_spinbox.value()
-        save_settings()
+        save_json()
