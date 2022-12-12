@@ -15,34 +15,29 @@ def save_settings():
     with open(SETTINGS_PATH, 'w') as f:
         json.dump(settings, f, indent=4)
 
-class _ExitPanelButton(QPushButton):
-    def __init__(self, stacked_widget, home_panel_index: int = 0):
-        super().__init__()
-        self.setObjectName("Kevinbot3_SettingsPanel_ExitButton")
-        self.setFixedSize(QSize(32, 32))
-        self.setIcon(QIcon.fromTheme("go-previous"))
-        self.setIconSize(QSize(24, 24))
-        self.setToolTip("Back")
-        self.clicked.connect(lambda: stacked_widget.setCurrentIndex(home_panel_index))
-
-
 class ThemePanel(QWidget):
     
     name = "Theme"
     
-    def __init__(self, stacked_widget, home_panel_index: int = 0):
+    def __init__(self, parent):
         super().__init__()
+
+        self.parent = parent
+
         self.setObjectName("Kevinbot3_SettingsPanel_Panel")
         self.root_layout = QHBoxLayout()
         self.setLayout(self.root_layout)
 
-        self.back_button = _ExitPanelButton(stacked_widget, home_panel_index)
-        self.root_layout.addWidget(self.back_button)
-
-        self.root_layout.addStretch()
-
         self.theme_layout = QVBoxLayout()
         self.root_layout.addLayout(self.theme_layout)
+
+        self.label = QLabel(self.name)
+        self.label.setStyleSheet("font-weight: bold;")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.theme_layout.addWidget(self.label)
+
+        self.theme_layout.addStretch()
+
 
         self.theme_select_layout = QHBoxLayout()
         self.theme_layout.addLayout(self.theme_select_layout)
@@ -53,8 +48,10 @@ class ThemePanel(QWidget):
         self.theme_select_switch = SwitchControl()
         self.theme_select_switch.set_active_color(QColor(self.palette().color(QPalette.Highlight)))
         self.theme_select_switch.set_bg_color(QColor(self.palette().color(QPalette.ColorRole.Dark)))
-        self.theme_select_switch.stateChanged.connect(self.theme_select_combo_box_changed)
+        self.theme_select_switch.stateChanged.connect(self.theme_select_changed)
         self.theme_select_layout.addWidget(self.theme_select_switch)
+
+        self.theme_layout.addStretch()
 
         if theme_control.get_dark():
             self.theme_select_switch.setChecked(True)
@@ -64,24 +61,28 @@ class ThemePanel(QWidget):
             self.theme_select_switch.start_animation(False)
 
 
-    def theme_select_combo_box_changed(self, index):
+    def theme_select_changed(self, index):
             theme_control.set_theme(self.theme_select_switch.isChecked())
             self.theme_select_switch.set_active_color(QColor(self.palette().color(QPalette.Highlight)))
             self.theme_select_switch.set_bg_color(QColor(self.palette().color(QPalette.ColorRole.Dark)))
+            self.parent.update_icons()
+
 
 class SysInfoPanel(QWidget):
     
     name = "System Info"
     
-    def __init__(self, stacked_widget, home_panel_index: int = 0):
+    def __init__(self, parent):
         super().__init__()
         
         self.setObjectName("Kevinbot3_SettingsPanel_Panel")
-        self.root_layout = QHBoxLayout()
+        self.root_layout = QVBoxLayout()
         self.setLayout(self.root_layout)
 
-        self.back_button = _ExitPanelButton(stacked_widget, home_panel_index)
-        self.root_layout.addWidget(self.back_button)
+        self.label = QLabel(self.name)
+        self.label.setStyleSheet("font-weight: bold;")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.root_layout.addWidget(self.label)
 
         self.root_layout.addStretch()
 
@@ -98,6 +99,8 @@ class SysInfoPanel(QWidget):
         self.update_interval_spinbox.setValue(settings["sysinfo"]["interval"])
         self.update_interval_spinbox.valueChanged.connect(self.update_interval_changed)
         self.layout.addWidget(self.update_interval_spinbox, 0, 1)
+
+        self.root_layout.addStretch()
 
     def update_interval_changed(self):
         settings["sysinfo"]["interval"] = self.update_interval_spinbox.value()
