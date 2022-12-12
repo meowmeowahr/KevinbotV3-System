@@ -40,19 +40,21 @@ class MainWindow(QMainWindow):
 
         # items
         
-        self.theme_button = QPushButton()
+        self.theme_button = QToolButton()
         self.theme_button.setObjectName("Kevinbot3_Settings_Panel_Button")
-        self.theme_button.setText(ThemePanel.name)
+        self.theme_button.setText(" " + ThemePanel.name)
         self.theme_button.setIconSize(QSize(24, 24))
         self.theme_button.setFixedWidth(128)
+        self.theme_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.theme_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(THEME_PANEL_INDEX))
         self.item_layout.addWidget(self.theme_button)
 
-        self.sysinfo_button = QPushButton()
+        self.sysinfo_button = QToolButton()
         self.sysinfo_button.setObjectName("Kevinbot3_Settings_Panel_Button")
-        self.sysinfo_button.setText(SysInfoPanel.name)
+        self.sysinfo_button.setText(" " +SysInfoPanel.name)
         self.sysinfo_button.setIconSize(QSize(24, 24))
         self.sysinfo_button.setFixedWidth(128)
+        self.sysinfo_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.sysinfo_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(SYSINFO_PANEL_INDEX))
         self.item_layout.addWidget(self.sysinfo_button)
 
