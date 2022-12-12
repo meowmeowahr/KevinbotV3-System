@@ -3,8 +3,11 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from KevinbotUI import SwitchControl
 import theme_control
+import socket
 import json
+import copy
 import os
+import platform
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
@@ -14,6 +17,22 @@ settings = json.load(open(SETTINGS_PATH, 'r'))
 def save_json():
     with open(SETTINGS_PATH, 'w') as f:
         json.dump(settings, f, indent=4)
+
+class _SysInfoItem(QWidget):
+    def __init__(self, name, data):
+        super().__init__()
+
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        self.name_label = QLabel(name)
+        self.layout.addWidget(self.name_label)
+
+        self.layout.addStretch()
+
+        self.data_label = QLabel(data)
+        self.data_label.setStyleSheet("font-weight: bold;")
+        self.layout.addWidget(self.data_label)
 
 class ThemePanel(QWidget):
     
@@ -68,7 +87,7 @@ class ThemePanel(QWidget):
             self.parent.update_icons()
 
 
-class SysInfoPanel(QWidget):
+class SysInfoPanel(QScrollArea):
     
     name = "System Info"
     
@@ -76,8 +95,13 @@ class SysInfoPanel(QWidget):
         super().__init__()
         
         self.setObjectName("Kevinbot3_SettingsPanel_Panel")
+        self.setWidgetResizable(True)
+
+        self.widget = QWidget()
+        self.setWidget(self.widget)
+
         self.root_layout = QVBoxLayout()
-        self.setLayout(self.root_layout)
+        self.widget.setLayout(self.root_layout)
 
         self.label = QLabel(self.name)
         self.label.setStyleSheet("font-weight: bold;")
@@ -86,22 +110,36 @@ class SysInfoPanel(QWidget):
 
         self.root_layout.addStretch()
 
-        self.layout = QGridLayout()
+        self.layout = QVBoxLayout()
         self.root_layout.addLayout(self.layout)
 
-        self.update_interval_label = QLabel("Update interval (seconds):")
-        self.layout.addWidget(self.update_interval_label, 0, 0)
+        self.logo_layout = QHBoxLayout()
+        self.kevinbot_logo = QLabel()
+        self.kevinbot_logo.setObjectName("Kevinbot3_Settings_Kevinbot_Logo")
+        self.kevinbot_logo.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "icons/kevinbot.svg")))
+        self.kevinbot_logo.setScaledContents(True)
+        self.kevinbot_logo.setFixedSize(QSize(96, 96))
+        self.logo_layout.addWidget(self.kevinbot_logo)
 
-        self.update_interval_spinbox = QSpinBox()
-        self.update_interval_spinbox.setMinimum(1)
-        self.update_interval_spinbox.setMaximum(5)
-        self.update_interval_spinbox.setMinimumWidth(64)
-        self.update_interval_spinbox.setValue(settings["sysinfo"]["interval"])
-        self.update_interval_spinbox.valueChanged.connect(self.update_interval_changed)
-        self.layout.addWidget(self.update_interval_spinbox, 0, 1)
+        self.layout.addLayout(self.logo_layout)
+
+        self.name = QLabel("Kevinbot v3")
+        self.name.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.name.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.name)
+
+        self.h_line = QFrame()
+        self.h_line.setFrameShape(QFrame.HLine)
+        self.layout.addWidget(self.h_line)
+
+        self.hostname = _SysInfoItem("Hostname", socket.gethostname())
+        self.layout.addWidget(self.hostname)
+
+        self.h_line = QFrame()
+        self.h_line.setFrameShape(QFrame.HLine)
+        self.layout.addWidget(self.h_line)
+
+        self.hostname = _SysInfoItem("Kernel Version", platform.release())
+        self.layout.addWidget(self.hostname)
 
         self.root_layout.addStretch()
-
-    def update_interval_changed(self):
-        settings["sysinfo"]["interval"] = self.update_interval_spinbox.value()
-        save_json()

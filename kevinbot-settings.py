@@ -77,31 +77,6 @@ class MainWindow(QMainWindow):
         self.home_top_layout = QHBoxLayout()
         self.home_layout.addLayout(self.home_top_layout)
 
-        self.kevinbot_logo = QLabel()
-        self.kevinbot_logo.setObjectName("Kevinbot3_Settings_Kevinbot_Logo")
-        self.kevinbot_logo.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "icons/kevinbot.svg")))
-        self.kevinbot_logo.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.kevinbot_logo.setScaledContents(True)
-        self.kevinbot_logo.setFixedSize(QSize(96, 96))
-        self.home_top_layout.addWidget(self.kevinbot_logo)
-
-        self.home_top_layout.addStretch()
-
-        self.home_top_name_layout = QVBoxLayout()
-        self.home_top_layout.addLayout(self.home_top_name_layout)
-
-        self.home_top_layout.addStretch()
-
-        self.home_top_name_layout.addStretch()
-
-        self.name = QLabel("Kevinbot v3")
-        self.name.setStyleSheet("font-size: 18px; font-weight: bold;")
-        self.home_top_name_layout.addWidget(self.name)
-
-        self.hostname = QLabel(socket.gethostname())
-        self.home_top_name_layout.addWidget(self.hostname)
-
-        self.home_top_name_layout.addStretch()
 
         self.settings_grid_layout = QGridLayout()
         self.home_layout.addLayout(self.settings_grid_layout)
