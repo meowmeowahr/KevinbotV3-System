@@ -5,7 +5,7 @@ from KevinbotUI import SwitchControl
 import theme_control
 import socket
 import json
-import copy
+import psutil
 import os
 import platform
 
@@ -30,7 +30,7 @@ class _SysInfoItem(QWidget):
 
         self.layout.addStretch()
 
-        self.data_label = QLabel(data)
+        self.data_label = QLabel(str(data))
         self.data_label.setStyleSheet("font-weight: bold;")
         self.layout.addWidget(self.data_label)
 
@@ -139,7 +139,14 @@ class SysInfoPanel(QScrollArea):
         self.h_line.setFrameShape(QFrame.HLine)
         self.layout.addWidget(self.h_line)
 
-        self.hostname = _SysInfoItem("Kernel Version", platform.release())
-        self.layout.addWidget(self.hostname)
+        self.kernel = _SysInfoItem("Kernel Version", platform.release())
+        self.layout.addWidget(self.kernel)
+
+        self.h_line = QFrame()
+        self.h_line.setFrameShape(QFrame.HLine)
+        self.layout.addWidget(self.h_line)
+
+        self.memory = _SysInfoItem("Memory", str(round(psutil.virtual_memory().total / 1024 / 1024 / 1024, 2)) + "GB Total")
+        self.layout.addWidget(self.memory)
 
         self.root_layout.addStretch()
