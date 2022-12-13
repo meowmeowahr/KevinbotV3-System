@@ -7,7 +7,6 @@ import threading
 import serial
 import speech
 import os
-import time
 from queue import Queue
 
 XB_SERIAL_PORT   = "/dev/ttyS0"
@@ -36,9 +35,6 @@ remote_status = "disconnected"
 speech_engine = "espeak"
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-
-import logging, random
-logging.basicConfig(format="%(message)s", level=logging.INFO)
 
 class bcolors:
     HEADER = '\033[95m'
