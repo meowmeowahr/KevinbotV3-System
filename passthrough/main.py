@@ -6,8 +6,9 @@ from xbee import XBee
 import threading
 import serial
 import speech
-import time
 import os
+import time
+from queue import Queue
 
 XB_SERIAL_PORT   = "/dev/ttyS0"
 XB_BAUD_RATE     = 230400
@@ -36,6 +37,9 @@ speech_engine = "espeak"
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+import logging, random
+logging.basicConfig(format="%(message)s", level=logging.INFO)
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -57,11 +61,10 @@ def p2_loop():
             if line[0] == "version":
                 ROBOT_VERSION = line[1]
             elif line[0] == "error":
-                print(bcolors.WARNING + "Error: " + ERRORS[int(line[1]) - 1] + bcolors.ENDC)
-                
+                print(bcolors.WARNING + "Error: " + ERRORS[int(line[1]) - 1] + bcolors.ENDC)               
 
-            print(bcolors.HEADER + "Command: " + line[0])
-            print("Value: " + str(line[1]) + bcolors.ENDC)
+            win.display(f'<span style="font-size:12pt; color:#ef8888;">BOT RX⇒ {"=".join(line)}</span>')
+            win.queue_needs_update = True
 
             send_data("{}={}\r".format(line[0], line[1]))
         except Exception as e:
@@ -73,68 +76,77 @@ def loop():
 
     while True:
         if ENABLED:
-                data = xbee.wait_read_frame()
-                if not data['rf_data'].decode().startswith('no-pass'):
-                    p2_ser.write(data['rf_data'])
-                print(bcolors.OKBLUE + "RX Data: " + data['rf_data'].decode())
-                data = data['rf_data'].decode().split('=', 1)
-            
-                command = data[0]
-                try:
-                    value = data[1]
-                    no_value = False
-                except IndexError:
-                    no_value = True
-                    value = None
+            data = xbee.wait_read_frame()
+            if not data['rf_data'].decode().startswith('no-pass'):
+                p2_ser.write(data['rf_data'])
+            data = data['rf_data'].decode().split('=', 1)
+        
+            command = data[0]
+            try:
+                value = data[1]
+                no_value = False
+            except IndexError:
+                no_value = True
+                value = None
 
-                if not "no-pass" in command:
-                    pass
-                else:
-                    print(bcolors.OKGREEN + "No Passthrough Command" + bcolors.ENDC)
-                    if command == "no-pass.speech":
-                        if speech_engine == "festival":
-                            print('fest')
-                            speech.SayText(value)
-                        elif speech_engine == "espeak":
-                            speech.SayTextEspeak(value)
-                    elif command == "no-pass.speech-engine":
-                        speech_engine = value.strip()
-                    elif command == "no-pass.remote.status":
-                        remote_status = value.strip()
-                        if remote_status == "disconnected":
-                            win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-disconnected.svg")))
-                            win.status.setText("Remote is Disconnected")
-                        elif remote_status == "connected":
-                            win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-connected.svg")))
-                            if remote_name:
-                                win.status.setText(f"Connected to \"{remote_name}\"")
-                            else:
-                                win.status.setText("Connected to \"UNKNOWN\"")
-                        elif remote_status == "error":
-                            win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-error.svg")))
-                    elif command == "no-pass.remote.name":
-                        remote_name = value.strip()
-                        win.status.setText(f"Connected to \"{remote_name}\"")
-                        
+            if not "no-pass" in command:
+                pass
+            else:
+                if command == "no-pass.speech":
+                    if speech_engine == "festival":
+                        speech.SayText(value)
+                    elif speech_engine == "espeak":
+                        speech.SayTextEspeak(value)
+                elif command == "no-pass.speech-engine":
+                    speech_engine = value.strip()
+                elif command == "no-pass.remote.status":
+                    remote_status = value.strip()
+                    if remote_status == "disconnected":
+                        win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-disconnected.svg")))
+                        win.status.setText("Remote is Disconnected")
+                    elif remote_status == "connected":
+                        win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-connected.svg")))
+                        if remote_name:
+                            win.status.setText(f"Connected to \"{remote_name}\"")
+                        else:
+                            win.status.setText("Connected to \"UNKNOWN\"")
+                    elif remote_status == "error":
+                        win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-error.svg")))
+                elif command == "no-pass.remote.name":
+                    remote_name = value.strip()
+                    win.status.setText(f"Connected to \"{remote_name}\"")
+                    win.queue_needs_update = True
+
+            win.display(f'<span style="font-size:12pt; color:#8888ef;">REM RX⇒ {"=".join(data)}</span>')
+            win.queue_needs_update = True
                             
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        # variables
+        self.is_term_open = False
+        self.terminal_queue = Queue(maxsize=10000)
+        self.queue_needs_update = False
+
         self.setWindowTitle("Kevinbot Passthrough")
         self.setWindowIcon(QIcon(os.path.join(CURRENT_DIR, "icon.svg")))
 
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
 
+        self.root_layout = QHBoxLayout()
+        self.widget.setLayout(self.root_layout)
+
         self.main_layout = QVBoxLayout()
-        self.widget.setLayout(self.main_layout)
+        self.root_layout.addLayout(self.main_layout)
 
         self.title = QLabel("Kevinbot Passthrough")
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title.setStyleSheet("font-size: 28px; font-weight: bold;")
         self.main_layout.addWidget(self.title)
 
+        # Status Text
         self.status = QLabel("Remote is Disconnected")
         self.status.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.status.setStyleSheet("font-size: 22px; font-weight: bold;")
@@ -142,6 +154,7 @@ class MainWindow(QMainWindow):
 
         self.main_layout.addStretch()
 
+        # Status Icon
         self.icon = QLabel()
         self.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-disconnected.svg")))
         self.icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -152,12 +165,51 @@ class MainWindow(QMainWindow):
         self.main_layout.addWidget(self.close_button)
 
         self.main_layout.addStretch()
-        
 
-        self.show()
+        # Terminal Popout Button
+        self.term_button = QPushButton(">")
+        self.term_button.setFixedSize(QSize(28, 28))
+        self.term_button.setCheckable(True)
+        self.term_button.clicked.connect(self.term_button_clicked)
+        self.root_layout.addWidget(self.term_button)
+
+        # Terminal
+        self.terminal = QTextEdit()
+        self.terminal.setObjectName("Kevinbot3_RemoteUI_TextEdit")
+        self.terminal.setReadOnly(True)
+        self.terminal.setVisible(self.is_term_open)
+        self.terminal.setStyleSheet("font-family: monospace;")
+        self.root_layout.addWidget(self.terminal)
+
+        # Timer
+        self.timer = QTimer()
+        self.timer.setInterval(1)
+        self.timer.timeout.connect(self.update_queue)
+        self.timer.start()
+
+    def display(self, s):
+        self.terminal_queue.put(s)
+
+    @pyqtSlot()
+    def update_queue(self):
+        if self.queue_needs_update:
+            self.terminal.append(self.terminal_queue.get())
+            self.queue_needs_update = False
+
+    def term_button_clicked(self):
+        # invert self.is_term_open
+        if self.is_term_open:
+            self.is_term_open = False
+        else:
+            self.is_term_open = True
+        self.terminal.setVisible(self.is_term_open)
 
 
 if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    app.setApplicationName("Kevinbot Passthrough")
+    app.setApplicationVersion("1.0")
+    win = MainWindow()
 
     p2thread = threading.Thread(target=p2_loop, daemon=True)
     p2thread.start()
@@ -165,8 +217,6 @@ if __name__ == "__main__":
     main_thread = threading.Thread(target=loop, daemon=True)
     main_thread.start()
 
-    app = QApplication(sys.argv)
-    app.setApplicationName("Kevinbot Passthrough")
-    app.setApplicationVersion("1.0")
-    win = MainWindow()
+    win.show()
+
     sys.exit(app.exec())
