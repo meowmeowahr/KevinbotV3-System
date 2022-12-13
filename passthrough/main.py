@@ -155,12 +155,12 @@ class MainWindow(QMainWindow):
         self.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-disconnected.svg")))
         self.icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(self.icon)
-        
+
+        self.main_layout.addStretch()
+
         self.close_button = QPushButton("Close")
         self.close_button.clicked.connect(self.close)
         self.main_layout.addWidget(self.close_button)
-
-        self.main_layout.addStretch()
 
         # Terminal Popout Button
         self.term_button = QPushButton(">")
