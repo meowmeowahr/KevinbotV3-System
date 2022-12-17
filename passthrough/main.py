@@ -95,9 +95,13 @@ def loop():
                         speech.SayText(value)
                     elif speech_engine == "espeak":
                         xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("remote.disableui=True\r", 'utf-8'))
+                        win.display(f'<span style="font-size:12pt; color:#88ef88;">REM TX⇐ remote.disableui=True</span>')
+                        win.queue_needs_update = True
                         espeak_engine.say(value)
                         espeak_engine.runAndWait()
                         xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("remote.disableui=False\r", 'utf-8'))
+                        win.display(f'<span style="font-size:12pt; color:#88ef88;">REM TX⇐ remote.disableui=False</span>')
+                        win.queue_needs_update = True
                 elif command == "no-pass.speech-engine":
                     speech_engine = value.strip()
                 elif command == "no-pass.remote.status":
