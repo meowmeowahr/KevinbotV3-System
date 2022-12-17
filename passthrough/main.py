@@ -3,11 +3,12 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
 from xbee import XBee
+from queue import Queue
 import threading
 import serial
 import speech
 import os
-from queue import Queue
+import pyttsx3
 
 XB_SERIAL_PORT   = "/dev/ttyS0"
 XB_BAUD_RATE     = 230400
@@ -28,6 +29,7 @@ xbee = XBee(xb_ser, escaped=True)
 p2_ser = serial.Serial(P2_SERIAL_PORT, baudrate=P2_BAUD_RATE)
 p2_ser.write(b"robot_version\r")
 
+espeak_engine = pyttsx3.init("espeak")
 
 remote_name = None
 remote_status = "disconnected"
@@ -92,7 +94,8 @@ def loop():
                     if speech_engine == "festival":
                         speech.SayText(value)
                     elif speech_engine == "espeak":
-                        speech.SayTextEspeak(value)
+                        espeak_engine.say(value)
+                        espeak_engine.runAndWait()
                 elif command == "no-pass.speech-engine":
                     speech_engine = value.strip()
                 elif command == "no-pass.remote.status":
@@ -188,7 +191,7 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def update_queue(self):
-        if self.queue_needs_update:
+        if not self.terminal_queue.empty():
             self.terminal.append(self.terminal_queue.get())
             self.queue_needs_update = False
 
