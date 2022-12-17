@@ -94,8 +94,10 @@ def loop():
                     if speech_engine == "festival":
                         speech.SayText(value)
                     elif speech_engine == "espeak":
+                        xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("remote.disableui=True\r", 'utf-8'))
                         espeak_engine.say(value)
                         espeak_engine.runAndWait()
+                        xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("remote.disableui=False\r", 'utf-8'))
                 elif command == "no-pass.speech-engine":
                     speech_engine = value.strip()
                 elif command == "no-pass.remote.status":
