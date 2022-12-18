@@ -65,7 +65,9 @@ def p2_loop():
             if line[0] == "version":
                 ROBOT_VERSION = line[1]
             elif line[0] == "error":
-                print(bcolors.WARNING + "Error: " + ERRORS[int(line[1]) - 1] + bcolors.ENDC)               
+                print(bcolors.WARNING + "Error: " + ERRORS[int(line[1]) - 1] + bcolors.ENDC)      
+                win.display(f'<span style="font-size:12pt; color:#fefe22;">=== Error: {ERRORS[int(line[1]) - 1]} ===</span>')  
+                win.queue_needs_update = True      
 
             win.display(f'<span style="font-size:12pt; color:#ef8888;">BOT RX⇒ {"=".join(line)}</span>')
             win.queue_needs_update = True
