@@ -21,7 +21,13 @@ ROBOT_VERSION    = "Unknown"
 global ENABLED
 ENABLED          = True
 
-ERRORS           = ["Invalid Arm Startup Position", "Invalid Command"]
+ERRORS           = ["Invalid Arm Startup Position", 
+                    "Invalid Command", 
+                    "BME280 Setup Failed", 
+                    "BME280 Read Failed", 
+                    "One Wire Bus Short", 
+                    "One Wire Bus Error", 
+                    "One Wire Device not Found"]
 
 xb_ser = serial.Serial(XB_SERIAL_PORT, baudrate=XB_BAUD_RATE)
 xbee = XBee(xb_ser, escaped=True)
