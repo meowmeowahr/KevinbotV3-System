@@ -9,6 +9,8 @@ import serial
 import speech
 import os
 import pyttsx3
+import datetime
+import time
 
 XB_SERIAL_PORT   = "/dev/ttyS0"
 XB_BAUD_RATE     = 230400
@@ -42,6 +44,10 @@ remote_status = "disconnected"
 
 speech_engine = "espeak"
 
+last_alive_msg = datetime.datetime.now()
+
+is_alive = True
+
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 class bcolors:
@@ -57,7 +63,23 @@ class bcolors:
 def send_data(data):
     xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("{}".format(data), 'utf-8'))
 
+def bg_loop():
+    global is_alive
+
+    while True:
+        # check if p2 is alive
+        now = datetime.datetime.now()
+        diff = now - last_alive_msg
+        if diff.total_seconds() > 3:
+            is_alive = False
+            win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-error.svg")))
+            win.status.setText("Communication Error")
+
+        time.sleep(1)
+
 def p2_loop():
+    global last_alive_msg
+
     while True:
         try:
             line = p2_ser.readline().decode().strip("\n").split("=")
@@ -72,9 +94,13 @@ def p2_loop():
             win.display(f'<span style="font-size:12pt; color:#ef8888;">BOT RX⇒ {"=".join(line)}</span>')
             win.queue_needs_update = True
 
+            if line[0] == "alive":
+                last_alive_msg = datetime.datetime.now()
+
             send_data("{}={}\r".format(line[0], line[1]))
         except Exception as e:
             print(bcolors.FAIL + "Error: {}".format(e) + bcolors.ENDC)
+
 
 def loop():
     global ENABLED
@@ -229,6 +255,9 @@ if __name__ == "__main__":
 
     main_thread = threading.Thread(target=loop, daemon=True)
     main_thread.start()
+
+    bg_thread = threading.Thread(target=bg_loop, daemon=True)
+    bg_thread.start()
 
     win.show()
 
