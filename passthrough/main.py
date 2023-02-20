@@ -20,9 +20,6 @@ P2_BAUD_RATE     = 230400
 
 ROBOT_VERSION    = "Unknown"
 
-global ENABLED
-ENABLED          = True
-
 ERRORS           = ["Invalid Arm Startup Position", 
                     "Invalid Command", 
                     "BME280 Setup Failed", 
@@ -103,61 +100,59 @@ def p2_loop():
 
 
 def loop():
-    global ENABLED
     global speech_engine
 
     while True:
-        if ENABLED:
-            data = xbee.wait_read_frame()
-            if not data['rf_data'].decode().startswith('no-pass'):
-                p2_ser.write(data['rf_data'])
-            data = data['rf_data'].decode().split('=', 1)
-        
-            command = data[0]
-            try:
-                value = data[1]
-                no_value = False
-            except IndexError:
-                no_value = True
-                value = None
+        data = xbee.wait_read_frame()
+        if not data['rf_data'].decode().startswith('no-pass'):
+            p2_ser.write(data['rf_data'])
+        data = data['rf_data'].decode().split('=', 1)
+    
+        command = data[0]
+        try:
+            value = data[1]
+            no_value = False
+        except IndexError:
+            no_value = True
+            value = None
 
-            if not "no-pass" in command:
-                pass
-            else:
-                if command == "no-pass.speech":
-                    if speech_engine == "festival":
-                        speech.SayText(value)
-                    elif speech_engine == "espeak":
-                        xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("remote.disableui=True\r", 'utf-8'))
-                        win.display(f'<span style="font-size:12pt; color:#88ef88;">REM TX⇐ remote.disableui=True</span>')
-                        win.queue_needs_update = True
-                        espeak_engine.say(value)
-                        espeak_engine.runAndWait()
-                        xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("remote.disableui=False\r", 'utf-8'))
-                        win.display(f'<span style="font-size:12pt; color:#88ef88;">REM TX⇐ remote.disableui=False</span>')
-                        win.queue_needs_update = True
-                elif command == "no-pass.speech-engine":
-                    speech_engine = value.strip()
-                elif command == "no-pass.remote.status":
-                    remote_status = value.strip()
-                    if remote_status == "disconnected":
-                        win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-disconnected.svg")))
-                        win.status.setText("Remote is Disconnected")
-                    elif remote_status == "connected":
-                        win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-connected.svg")))
-                        if remote_name:
-                            win.status.setText(f"Connected to \"{remote_name}\"")
-                        else:
-                            win.status.setText("Connected to \"UNKNOWN\"")
-                    elif remote_status == "error":
-                        win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-error.svg")))
-                elif command == "no-pass.remote.name":
-                    remote_name = value.strip()
-                    win.status.setText(f"Connected to \"{remote_name}\"")
+        if not "no-pass" in command:
+            pass
+        else:
+            if command == "no-pass.speech":
+                if speech_engine == "festival":
+                    speech.SayText(value)
+                elif speech_engine == "espeak":
+                    xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("remote.disableui=True\r", 'utf-8'))
+                    win.display(f'<span style="font-size:12pt; color:#88ef88;">REM TX⇐ remote.disableui=True</span>')
                     win.queue_needs_update = True
+                    espeak_engine.say(value)
+                    espeak_engine.runAndWait()
+                    xbee.send("tx", dest_addr=b'\x00\x00', data=bytes("remote.disableui=False\r", 'utf-8'))
+                    win.display(f'<span style="font-size:12pt; color:#88ef88;">REM TX⇐ remote.disableui=False</span>')
+                    win.queue_needs_update = True
+            elif command == "no-pass.speech-engine":
+                speech_engine = value.strip()
+            elif command == "no-pass.remote.status":
+                remote_status = value.strip()
+                if remote_status == "disconnected":
+                    win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-disconnected.svg")))
+                    win.status.setText("Remote is Disconnected")
+                elif remote_status == "connected":
+                    win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-connected.svg")))
+                    if remote_name:
+                        win.status.setText(f"Connected to \"{remote_name}\"")
+                    else:
+                        win.status.setText("Connected to \"UNKNOWN\"")
+                elif remote_status == "error":
+                    win.icon.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "network-error.svg")))
+            elif command == "no-pass.remote.name":
+                remote_name = value.strip()
+                win.status.setText(f"Connected to \"{remote_name}\"")
+                win.queue_needs_update = True
 
-            win.display(f'<span style="font-size:12pt; color:#8888ef;">REM RX⇒ {"=".join(data)}</span>')
-            win.queue_needs_update = True
+        win.display(f'<span style="font-size:12pt; color:#8888ef;">REM RX⇒ {"=".join(data)}</span>')
+        win.queue_needs_update = True
                             
 class MainWindow(QMainWindow):
     def __init__(self):
