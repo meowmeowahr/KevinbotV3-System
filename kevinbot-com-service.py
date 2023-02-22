@@ -3,6 +3,8 @@ import os
 import subprocess
 import threading
 import logging
+import json
+import time
 
 import playsound
 import pyttsx3
@@ -10,11 +12,19 @@ import serial
 import zmq
 from xbee import XBee
 
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
+
+settings = json.load(open(SETTINGS_PATH, 'r'))
+
 XB_SERIAL_PORT = "/dev/ttyS0"
 XB_BAUD_RATE = 230400
 
 P2_SERIAL_PORT = "/dev/ttyAMA1"
 P2_BAUD_RATE = 230400
+
+ZMQ_PORT = settings["com-service"]["zmq"]["port"]
+ZMQ_INTERVAL = settings["com-service"]["zmq"]["interval"]
 
 USING_BATT_2 = False
 BATT_LOW_VOLT = 99
@@ -28,18 +38,6 @@ sensors = {"batts": [-1, -1]}
 
 shown_batt1_notif = False
 shown_batt2_notif = False
-
-# TODO: Implement zmq support
-"""
-context = zmq.Context()
-socket = context.socket(zmq.REP)
-socket.bind("tcp://*:5555")
-
-while True:
-    #  Wait for next request from client
-    message = socket.recv()
-    print("Received request: %s" % message)
-"""
 
 
 def speak_festival(text):
@@ -117,7 +115,22 @@ def remote_recv_loop():
             subprocess.run(["systemctl", "poweroff"])
 
 
+def update_zmq():
+    while True:
+        socket.send_json(sensors)
+        time.sleep(ZMQ_INTERVAL)
+
+
 if __name__ == "__main__":
+    # banner
+    try:
+        import pyfiglet
+        print("\033[94m", end=None)
+        print(pyfiglet.Figlet().renderText("Kevinbot COM"))
+    except ImportError:
+        print("\033[94mKevinbot COM")
+    print("\033[0m", end=None)
+
     # logging
     logging.basicConfig(level=logging.DEBUG)
 
@@ -130,9 +143,16 @@ if __name__ == "__main__":
     # speech
     espeak_engine = pyttsx3.init("espeak")
 
+    # zmq
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+    socket.bind(f"tcp://*:{ZMQ_PORT}")
+
     # threads
     recv_thread = threading.Thread(target=recv_loop)
     recv_thread.start()
 
-    remote_recv_thread = threading.Thread(target=remote_recv_loop)
+    remote_recv_thread = threading.Thread(target=remote_recv_loop, daemon=True)
     remote_recv_thread.start()
+
+    zmq_thread = threading.Thread(target=update_zmq, daemon=True)
