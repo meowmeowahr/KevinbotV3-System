@@ -6,6 +6,12 @@
         "zmq": {
             "port": 1872,
             "interval": 2
+        },
+        "serial": {
+            "p2-baud": 230400,
+            "p2-port": "/dev/ttyAMA1",
+            "xb-baud": 230400,
+            "xb-port": "/dev/ttyS0"
         }
     }
 }

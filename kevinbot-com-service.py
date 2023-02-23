@@ -17,11 +17,11 @@ SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
 
 settings = json.load(open(SETTINGS_PATH, 'r'))
 
-XB_SERIAL_PORT = "/dev/ttyS0"
-XB_BAUD_RATE = 230400
+XB_SERIAL_PORT = settings["com-service"]["serial"]["xb-port"]
+XB_BAUD_RATE = settings["com-service"]["serial"]["xb-baud"]
 
-P2_SERIAL_PORT = "/dev/ttyAMA1"
-P2_BAUD_RATE = 230400
+P2_SERIAL_PORT = settings["com-service"]["serial"]["p2-port"]
+P2_BAUD_RATE = settings["com-service"]["serial"]["p2-baud"]
 
 ZMQ_PORT = settings["com-service"]["zmq"]["port"]
 ZMQ_INTERVAL = settings["com-service"]["zmq"]["interval"]
