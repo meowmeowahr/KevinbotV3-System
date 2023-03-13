@@ -39,6 +39,8 @@ sensors = {"batts": [-1, -1]}
 shown_batt1_notif = False
 shown_batt2_notif = False
 
+enabled = False
+
 
 def speak_festival(text):
     os.system('echo "{}" | festival --tts'.format(text.replace("Kevinbot",
@@ -52,14 +54,14 @@ def data_to_remote(data):
 
 def recv_loop():
     global shown_batt1_notif, shown_batt2_notif
-    global sensors
+    global sensors, enabled
 
     while True:
-        line = p2_ser.readline().decode().strip("\n").split("=")
-
-        data_to_remote("{}={}\r".format(line[0], line[1]))
-
         try:
+            line = p2_ser.readline().decode().strip("\n").split("=")
+
+            data_to_remote("{}={}\r".format(line[0], line[1]))
+
             if line[0] == "batt_volts":
                 line[1] = line[1].split(",")
 
@@ -85,6 +87,9 @@ def recv_loop():
                                         \nVoltage: {float(line[1][1]) / 10}V",
                                         "-u", "critical", "-t", "0"])
                         shown_batt2_notif = True
+            elif line[0] == "robot.disable":
+                enabled = not line[1].lower() in ["true", "t"]
+                logging.info(f"Enabled: {enabled}")
         except ValueError:
             # data is corrupt
             pass
@@ -92,27 +97,40 @@ def recv_loop():
 
 def remote_recv_loop():
     global speech_engine
+    global enabled
 
     while True:
-        data = xbee.wait_read_frame()
+        try:
+            data = xbee.wait_read_frame()
 
-        if not data['rf_data'].decode().startswith('no-pass'):
-            p2_ser.write(data['rf_data'])
-        data = data['rf_data'].decode().strip("\r\n").split('=', 1)
+            if (not data['rf_data'].decode().startswith('no-pass')) and enabled:
+                print("en")
+                p2_ser.write(data['rf_data'])
+            data = data['rf_data'].decode().strip("\r\n").split('=', 1)
 
-        logging.debug(f"Recieved from XBee: {data}")
+            logging.debug(f"Recieved from XBee: {data}")
 
-        if data[0] == "no-pass.speech":
-            if speech_engine == "festival":
-                speak_festival(data[1].strip("\r\n"))
-            elif speech_engine == "espeak":
-                espeak_engine.say(data[1].strip("\r\n"))
-                espeak_engine.runAndWait()
-        elif data[0] == "no-pass.speech-engine":
-            speech_engine = data[1].strip("\r\n")
+            if data[0] == "no-pass.speech":
+                if speech_engine == "festival":
+                    speak_festival(data[1].strip("\r\n"))
+                elif speech_engine == "espeak":
+                    espeak_engine.say(data[1].strip("\r\n"))
+                    espeak_engine.runAndWait()
+            elif data[0] == "no-pass.speech-engine":
+                speech_engine = data[1].strip("\r\n")
+            elif data[0] == "robot.disable":
+                enabled = not data[1].lower() in ["true", "t"]
+                logging.info(f"Enabled: {enabled}")
 
-        if data[0] == "shutdown":
-            subprocess.run(["systemctl", "poweroff"])
+            if data[0] == "shutdown":
+                subprocess.run(["systemctl", "poweroff"])
+        except Exception as e:
+            data_to_remote("robot.disable=True")
+            disable()
+
+
+def disable():
+    p2_ser.write("shutdown".encode("UTF-8"))
 
 
 def update_zmq():
