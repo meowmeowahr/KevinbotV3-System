@@ -68,6 +68,10 @@ class DeviceManager:
     def set_value(self, key: str, value) -> None:
         if not (type(self.__device_pairs[key]) == type(value) or value == UNKNOWN_VALUE):
             raise ValueError(f"Can't set a a value of {type(self.__device_pairs[key])} to {type(value)}")
+
+        if key not in self.__device_pairs:
+            raise RuntimeWarning(f"Key {key} does not exist in the table")
+
         self.__device_pairs[key] = value
 
         if self.__mod_callback:

@@ -5,10 +5,16 @@ By: Kevin Ahr
 
 import json
 import os
+import ast
+import traceback
+
+import serial
+from xbee import XBee
+
+import colorama
 
 import device_manager
 import hardware_utils
-import kevinbot_communication
 
 # paths
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -20,16 +26,48 @@ settings = json.load(open(SETTINGS_PATH, 'r'))
 # Device Table Manager
 dev_man = device_manager.DeviceManager()
 
+# Color printing
+colorama.init()
+
+# variables
+connected_remotes = {}
+
 
 # device communication
 def xbee_callback(message):
-    text_data = message["rf_data"].decode("utf-8")
-    print(text_data)
+    # noinspection PyBroadException
+    try:
+        text_data = message["rf_data"].decode("utf-8").strip("\r\n")
+        data = text_data.split("=", maxsplit=1)
+        if data[0] == "core.speech":
+            dev_man.attach_callback(device_manager.CallbackTypes.ModData, None)
+            dev_man.set_value(data[0], data[1])
+            dev_man.attach_callback(device_manager.CallbackTypes.ModData, tx_cv)
+        elif data[0] == "core.speech-engine":
+            dev_man.attach_callback(device_manager.CallbackTypes.ModData, None)
+            dev_man.set_value(data[0], data[1])
+            dev_man.attach_callback(device_manager.CallbackTypes.ModData, tx_cv)
+        elif data[0] == "core.remote.status":
+            status, remote = data[1].split(":", maxsplit=1)
+            connected_remotes[remote] = status
+            print(connected_remotes)
+
+        else:
+            if len(data) == 2:
+                dev_man.set_value(data[0], ast.literal_eval(data[1]))
+                if dev_man.get_value("enabled") is False:
+                    disable_actions()
+    except Exception:
+        print(colorama.Fore.RED + "An error has occurred in XBEE_CALLBACK" + colorama.Style.RESET_ALL)
+        traceback.print_exc()
 
 
-kevinbot_communication.init_core(settings["services"]["serial"]["p2-port"], settings["services"]["serial"]["p2-baud"])
-kevinbot_communication.init_xbee(settings["services"]["serial"]["xb-port"], settings["services"]["serial"]["xb-baud"],
-                                 callback=xbee_callback)
+core_serial = serial.Serial(settings["services"]["serial"]["p2-port"],
+                            baudrate=settings["services"]["serial"]["p2-baud"])
+
+xbee_serial = serial.Serial(settings["services"]["serial"]["xb-port"],
+                            baudrate=settings["services"]["serial"]["xb-baud"])
+xbee = XBee(xbee_serial, escaped=True, callback=xbee_callback)
 
 
 # Hardware Keys
@@ -65,6 +103,9 @@ def add_keys():
 
     dev_man.add_pair(("enabled", False))
 
+    dev_man.add_pair(("core.speech", ""))
+    dev_man.add_pair(("core.speech-engine", ""))
+
 
 def convert_cv(key: str) -> str:
     value = dev_man.get_value(key)
@@ -77,9 +118,23 @@ def convert_cv(key: str) -> str:
 
 
 def tx_cv(key: str, _: any) -> None:
-    """ Send command=value data to the Kevinbot Core """
+    """ Send command=value data to the Kevinbot Hardware Controller """
 
     print(f"Sent: {convert_cv(key)}")
+    if dev_man.get_value("enabled") is True:
+        core_serial.write(convert_cv(key).encode("utf-8"))
+
+
+def raw_send(data: str) -> None:
+    core_serial.write(data.encode("utf-8"))
+
+
+def disable_actions():
+    raw_send("stop")
+    dev_man.attach_callback(device_manager.CallbackTypes.ModData, None)
+    dev_man.set_value("left_motor", 1500)
+    dev_man.set_value("right_motor", 1500)
+    dev_man.attach_callback(device_manager.CallbackTypes.ModData, tx_cv)
 
 
 if __name__ == "__main__":
