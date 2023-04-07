@@ -17,14 +17,14 @@ SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
 
 settings = json.load(open(SETTINGS_PATH, 'r'))
 
-XB_SERIAL_PORT = settings["com-service"]["serial"]["xb-port"]
-XB_BAUD_RATE = settings["com-service"]["serial"]["xb-baud"]
+XB_SERIAL_PORT = settings["services"]["serial"]["xb-port"]
+XB_BAUD_RATE = settings["services"]["serial"]["xb-baud"]
 
-P2_SERIAL_PORT = settings["com-service"]["serial"]["p2-port"]
-P2_BAUD_RATE = settings["com-service"]["serial"]["p2-baud"]
+P2_SERIAL_PORT = settings["services"]["serial"]["p2-port"]
+P2_BAUD_RATE = settings["services"]["serial"]["p2-baud"]
 
-ZMQ_PORT = settings["com-service"]["zmq"]["port"]
-ZMQ_INTERVAL = settings["com-service"]["zmq"]["interval"]
+ZMQ_PORT = settings["services"]["zmq"]["port"]
+ZMQ_INTERVAL = settings["services"]["zmq"]["interval"]
 
 USING_BATT_2 = False
 BATT_LOW_VOLT = 99
@@ -90,7 +90,7 @@ def recv_loop():
             elif line[0] == "robot.disable":
                 enabled = not line[1].lower() in ["true", "t"]
                 logging.info(f"Enabled: {enabled}")
-        except ValueError:
+        except (IndexError, ValueError):
             # data is corrupt
             pass
 
@@ -120,6 +120,7 @@ def remote_recv_loop():
                 speech_engine = data[1].strip("\r\n")
             elif data[0] == "robot.disable":
                 enabled = not data[1].lower() in ["true", "t"]
+                p2_ser.write("stop".encode("UTF-8"))
                 logging.info(f"Enabled: {enabled}")
 
             if data[0] == "shutdown":
@@ -130,7 +131,7 @@ def remote_recv_loop():
 
 
 def disable():
-    p2_ser.write("shutdown".encode("UTF-8"))
+    p2_ser.write("stop".encode("UTF-8"))
 
 
 def update_zmq():

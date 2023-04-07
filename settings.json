@@ -2,7 +2,7 @@
     "sysinfo": {
         "interval": 2
     },
-    "com-service": {
+    "services": {
         "zmq": {
             "port": 1872,
             "interval": 2
