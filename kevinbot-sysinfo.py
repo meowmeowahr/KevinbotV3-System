@@ -23,7 +23,7 @@ if platform.system() == 'Windows':
     import ctypes
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("_")
 
-__version__ = 'v1.0'
+__version__ = 'v0.1.0'
 __author__ = 'Kevin Ahr'
 
 ENABLE_BATT = False

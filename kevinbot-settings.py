@@ -4,15 +4,15 @@ from PyQt5.QtGui import *
 from settings_panels import ThemePanel, SysInfoPanel
 import os
 import sys
-import socket
 import qtawesome as qta
 import theme_control
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-HOME_WIDGET_INDEX   = 0
-THEME_PANEL_INDEX   = 1
+HOME_WIDGET_INDEX = 0
+THEME_PANEL_INDEX = 1
 SYSINFO_PANEL_INDEX = 2
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -77,7 +77,6 @@ class MainWindow(QMainWindow):
         self.home_top_layout = QHBoxLayout()
         self.home_layout.addLayout(self.home_top_layout)
 
-
         self.settings_grid_layout = QGridLayout()
         self.home_layout.addLayout(self.settings_grid_layout)
 
@@ -107,4 +106,4 @@ if __name__ == "__main__":
     app.setApplicationName("Kevinbot v3 Settings")
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())        
+    sys.exit(app.exec_())

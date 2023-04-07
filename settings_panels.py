@@ -14,9 +14,11 @@ SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
 
 settings = json.load(open(SETTINGS_PATH, 'r'))
 
+
 def save_json():
     with open(SETTINGS_PATH, 'w') as f:
         json.dump(settings, f, indent=4)
+
 
 class _SysInfoItem(QWidget):
     def __init__(self, name, data):
@@ -33,6 +35,7 @@ class _SysInfoItem(QWidget):
         self.data_label = QLabel(str(data))
         self.data_label.setStyleSheet("font-weight: bold;")
         self.layout.addWidget(self.data_label)
+
 
 class ThemePanel(QWidget):
     
@@ -57,7 +60,6 @@ class ThemePanel(QWidget):
 
         self.theme_layout.addStretch()
 
-
         self.theme_select_layout = QHBoxLayout()
         self.theme_layout.addLayout(self.theme_select_layout)
 
@@ -79,12 +81,11 @@ class ThemePanel(QWidget):
             self.theme_select_switch.setChecked(False)
             self.theme_select_switch.start_animation(False)
 
-
     def theme_select_changed(self, index):
-            theme_control.set_theme(self.theme_select_switch.isChecked())
-            self.theme_select_switch.set_active_color(QColor(self.palette().color(QPalette.Highlight)))
-            self.theme_select_switch.set_bg_color(QColor(self.palette().color(QPalette.ColorRole.Dark)))
-            self.parent.update_icons()
+        theme_control.set_theme(self.theme_select_switch.isChecked())
+        self.theme_select_switch.set_active_color(QColor(self.palette().color(QPalette.Highlight)))
+        self.theme_select_switch.set_bg_color(QColor(self.palette().color(QPalette.ColorRole.Dark)))
+        self.parent.update_icons()
 
 
 class SysInfoPanel(QScrollArea):
@@ -146,7 +147,8 @@ class SysInfoPanel(QScrollArea):
         self.h_line.setFrameShape(QFrame.HLine)
         self.layout.addWidget(self.h_line)
 
-        self.memory = _SysInfoItem("Memory", str(round(psutil.virtual_memory().total / 1024 / 1024 / 1024, 2)) + "GB Total")
+        self.memory = _SysInfoItem("Memory",
+                                   str(round(psutil.virtual_memory().total / 1024 / 1024 / 1024, 2)) + "GB Total")
         self.layout.addWidget(self.memory)
 
         self.root_layout.addStretch()

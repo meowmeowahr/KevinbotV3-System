@@ -20,13 +20,16 @@ settings = json.load(open(SETTINGS_PATH, 'r'))
 # Device Table Manager
 dev_man = device_manager.DeviceManager()
 
+
 # device communication
 def xbee_callback(message):
     text_data = message["rf_data"].decode("utf-8")
     print(text_data)
 
+
 kevinbot_communication.init_core(settings["services"]["serial"]["p2-port"], settings["services"]["serial"]["p2-baud"])
-kevinbot_communication.init_xbee(settings["services"]["serial"]["xb-port"], settings["services"]["serial"]["xb-baud"], callback=xbee_callback)
+kevinbot_communication.init_xbee(settings["services"]["serial"]["xb-port"], settings["services"]["serial"]["xb-baud"],
+                                 callback=xbee_callback)
 
 
 # Hardware Keys
@@ -73,7 +76,7 @@ def convert_cv(key: str) -> str:
     return f"{new_key}={value}"
 
 
-def tx_cv(key: str, value: any) -> None:
+def tx_cv(key: str, _: any) -> None:
     """ Send command=value data to the Kevinbot Core """
 
     print(f"Sent: {convert_cv(key)}")

@@ -5,6 +5,7 @@ core_serial = None
 xbee_serial = None
 xbee = None
 
+
 def init_core(port: str, baud: int):
     global core_serial
     core_serial = serial.Serial(port, baudrate=baud)
