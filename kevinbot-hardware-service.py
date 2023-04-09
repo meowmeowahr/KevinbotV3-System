@@ -7,6 +7,7 @@ import json
 import os
 import ast
 import traceback
+import time
 
 import serial
 from xbee import XBee
@@ -51,6 +52,10 @@ def xbee_callback(message):
             status, remote = data[1].split(":", maxsplit=1)
             connected_remotes[remote] = status
             print(connected_remotes)
+        # value-less commands
+        elif data[0] == "stop":
+            time.sleep(0.02)
+            raw_send("stop")
 
         else:
             if len(data) == 2:
@@ -126,6 +131,7 @@ def tx_cv(key: str, _: any) -> None:
 
 
 def raw_send(data: str) -> None:
+    print(f"Sent: {data}")
     core_serial.write(data.encode("utf-8"))
 
 
