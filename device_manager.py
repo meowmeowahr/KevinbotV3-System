@@ -24,7 +24,7 @@ class DeviceManager:
         self.__mod_callback = None
 
     def json_import(self, data: dict) -> None:
-        if not isinstance(data, (tuple, list)):
+        if not isinstance(data, dict):
             raise ValueError(f"Expected dict, got {type(data)}")
 
         self.__device_pairs = data
