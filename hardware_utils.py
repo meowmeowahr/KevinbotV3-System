@@ -1,5 +1,7 @@
-CONVERSION_TABLE = {"left_motor": "left_us",
-                    "right_motor": "right_us"}
+import ast
+import re
+
+CONVERSION_TABLE = {}
 
 
 def convert_values(value: any) -> any:
@@ -8,5 +10,10 @@ def convert_values(value: any) -> any:
             return True
         elif value.lower() == "false":
             return False
+        elif re.match(r"^[-+]?[0-9]+$", value):
+            return int(value)
+
+    else:
+        return ast.literal_eval(value)
 
     return value

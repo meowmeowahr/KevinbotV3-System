@@ -52,19 +52,47 @@ def xbee_callback(message):
             status, remote = data[1].split(":", maxsplit=1)
             connected_remotes[remote] = status
             print(connected_remotes)
+
         # value-less commands
         elif data[0] == "stop":
             time.sleep(0.02)
             raw_send("stop")
+        elif data[0] == "get_json":
+            data = str(dev_man.json_export())
+            split_data = [data[i:i+settings["services"]["data_max"]] for i in range(0, len(data), settings["services"]["data_max"])]
+            data_to_remote(f"tables.len={len(split_data)-1}")
+            for index, part in enumerate(split_data):
+                data_to_remote(f"tables.part=\"{part}\"")
+
+        elif data[0] == "pint":
+            raw_send(f"{data[0]}={data[1]}")
 
         else:
             if len(data) == 2:
-                dev_man.set_value(data[0], ast.literal_eval(data[1]))
+                dev_man.set_value(data[0], hardware_utils.convert_values(data[1]))
                 if dev_man.get_value("enabled") is False:
                     disable_actions()
     except Exception:
         print(colorama.Fore.RED + "An error has occurred in XBEE_CALLBACK" + colorama.Style.RESET_ALL)
         traceback.print_exc()
+
+
+def main_loop():
+    while True:
+        data = core_serial.readline()
+        data = data.decode('utf-8').strip("\r\n").split("=", maxsplit=1)
+        print(data)
+
+        if data[0] == "alive":  # The alive command is used as a timer to send device tables
+            dev_man.attach_callback(device_manager.CallbackTypes.ModData, None)
+            dev_man.set_value("core_secs", int(data[1]))
+            dev_man.attach_callback(device_manager.CallbackTypes.ModData, tx_cv)
+
+            table = str(dev_man.json_export())
+            split_data = [table[i:i+settings["services"]["data_max"]] for i in range(0, len(table), settings["services"]["data_max"])]
+            data_to_remote(f"tables.len={len(split_data)-1}")
+            for index, part in enumerate(split_data):
+                data_to_remote(f"tables.part{index}:{len(split_data)-1}=\"{part}\"")
 
 
 core_serial = serial.Serial(settings["services"]["serial"]["p2-port"],
@@ -103,13 +131,14 @@ def add_keys():
     dev_man.add_pair(("cam_brightness", 1))
 
     dev_man.add_pair(("robot_version", device_manager.UNKNOWN_VALUE))
-    dev_man.add_pair(("core_millis", device_manager.UNKNOWN_VALUE))
+    dev_man.add_pair(("core_millis", 0))
+    dev_man.add_pair(("core_secs", 0))
     dev_man.add_pair(("core_clock", device_manager.UNKNOWN_VALUE))
 
     dev_man.add_pair(("enabled", False))
 
     dev_man.add_pair(("core.speech", ""))
-    dev_man.add_pair(("core.speech-engine", ""))
+    dev_man.add_pair(("core.speech-engine", "espeak"))
 
 
 def convert_cv(key: str) -> str:
@@ -125,14 +154,17 @@ def convert_cv(key: str) -> str:
 def tx_cv(key: str, _: any) -> None:
     """ Send command=value data to the Kevinbot Hardware Controller """
 
-    print(f"Sent: {convert_cv(key)}")
     if dev_man.get_value("enabled") is True:
         core_serial.write(convert_cv(key).encode("utf-8"))
-
+        print(f"Sent: {convert_cv(key)}")
 
 def raw_send(data: str) -> None:
     print(f"Sent: {data}")
     core_serial.write(data.encode("utf-8"))
+
+
+def data_to_remote(data):
+    xbee.send("tx", dest_addr=b'\x00\x00', data=data.encode('utf-8'))
 
 
 def disable_actions():
@@ -147,3 +179,5 @@ if __name__ == "__main__":
     dev_man.attach_callback(device_manager.CallbackTypes.ModData, tx_cv)
     add_keys()
     dev_man.print_data()
+
+    main_loop()
