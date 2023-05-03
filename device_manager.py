@@ -4,6 +4,7 @@ By: Kevin Ahr
 """
 
 from enum import Enum
+import json
 
 UNKNOWN_VALUE = None
 
@@ -27,6 +28,9 @@ class DeviceManager:
             raise ValueError(f"Expected dict, got {type(data)}")
 
         self.__device_pairs = data
+
+    def json_export(self) -> dict:
+        return json.dumps(self.__device_pairs)
 
     def print_data(self) -> None:
         """ Print out all pairs in a pretty format """
