@@ -12,3 +12,4 @@ pyzmq~=25.0.2
 colorama~=0.4.6
 paho-mqtt~=1.6.1
 imusensor~=1.0.1
+adafruit-circuitpython-bme280~=2.6.20

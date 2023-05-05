@@ -23,6 +23,13 @@
 			"topic-pitch": "kevinbot/mpu/pitch",
 			"topic-yaw": "kevinbot/mpu/yaw"
 		},
+		"bme": {
+			"address": 68,
+			"update-speed": 0.5,
+			"topic-temp": "kevinbot/bme/temperature",
+			"topic-humidity": "kevinbot/bme/humidity",
+			"topic-pressure": "kevinbot/bme/pressure"
+		},
         "data_max": 80
     }
 }
