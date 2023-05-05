@@ -67,6 +67,12 @@ def xbee_callback(message):
         elif data[0] == "pint":
             raw_send(f"{data[0]}={data[1]}")
 
+        elif "color" in data[0]:
+            if len(data) == 2:
+                dev_man.set_value(data[0], data[1])
+                if dev_man.get_value("enabled") is False:
+                    disable_actions()
+
         else:
             if len(data) == 2:
                 dev_man.set_value(data[0], hardware_utils.convert_values(data[1]))
@@ -88,11 +94,15 @@ def main_loop():
             dev_man.set_value("core_secs", int(data[1]))
             dev_man.attach_callback(device_manager.CallbackTypes.ModData, tx_cv)
 
-            table = str(dev_man.json_export())
-            split_data = [table[i:i+settings["services"]["data_max"]] for i in range(0, len(table), settings["services"]["data_max"])]
-            data_to_remote(f"tables.len={len(split_data)-1}")
-            for index, part in enumerate(split_data):
-                data_to_remote(f"tables.part{index}:{len(split_data)-1}=\"{part}\"")
+            for key in dev_man.pairs:
+                data_to_remote(f"rx.{key}={dev_man.pairs[key]}")
+        if data[0] == "batt_volts":
+            dev_man.attach_callback(device_manager.CallbackTypes.ModData, None)
+            dev_man.set_value("batt_volt1", int(int(data[1].split(",")[0])))
+            dev_man.set_value("batt_volt2", int(int(data[1].split(",")[1])))
+            dev_man.attach_callback(device_manager.CallbackTypes.ModData, tx_cv)
+
+            data_to_remote(f"batt_volts={data[1]}")
 
 
 core_serial = serial.Serial(settings["services"]["serial"]["p2-port"],
@@ -134,6 +144,9 @@ def add_keys():
     dev_man.add_pair(("core_millis", 0))
     dev_man.add_pair(("core_secs", 0))
     dev_man.add_pair(("core_clock", device_manager.UNKNOWN_VALUE))
+
+    dev_man.add_pair(("batt_volt1", 120))
+    dev_man.add_pair(("batt_volt2", 120))
 
     dev_man.add_pair(("enabled", False))
 

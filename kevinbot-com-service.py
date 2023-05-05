@@ -5,12 +5,15 @@ import threading
 import logging
 import json
 import time
+import uuid
 
 import playsound
 import pyttsx3
 import serial
-import zmq
+from paho.mqtt import client as mqtt_client
+
 from xbee import XBee
+
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
@@ -23,23 +26,32 @@ XB_BAUD_RATE = settings["services"]["serial"]["xb-baud"]
 P2_SERIAL_PORT = settings["services"]["serial"]["p2-port"]
 P2_BAUD_RATE = settings["services"]["serial"]["p2-baud"]
 
-ZMQ_PORT = settings["services"]["zmq"]["port"]
-ZMQ_INTERVAL = settings["services"]["zmq"]["interval"]
+BROKER = settings["services"]["mqtt"]["address"]
+PORT = settings["services"]["mqtt"]["port"]
+TOPIC_ROLL = settings["services"]["mpu"]["topic-roll"]
+TOPIC_PITCH = settings["services"]["mpu"]["topic-pitch"]
+TOPIC_YAW = settings["services"]["mpu"]["topic-yaw"]
+CLI_ID = f'kevinbot-com-service-{uuid.uuid4()}'
 
 USING_BATT_2 = False
 BATT_LOW_VOLT = 99
 
 speech_engine = "espeak"
+connected_remotes = []
 
 last_alive_msg = datetime.datetime.now()
 is_alive = True
 
-sensors = {"batts": [-1, -1]}
+sensors = {"batts": [-1, -1], "mpu": [0, 0, 0]}
 
 shown_batt1_notif = False
 shown_batt2_notif = False
 
 enabled = False
+
+
+def map_range(value, inMin, inMax, outMin, outMax):
+    return outMin + (((value - inMin) / (inMax - inMin)) * (outMax - outMin))
 
 
 def speak_festival(text):
@@ -98,32 +110,41 @@ def recv_loop():
 def remote_recv_loop():
     global speech_engine
     global enabled
+    global connected_remotes
 
     while True:
         try:
             data = xbee.wait_read_frame()
 
-            if (not data['rf_data'].decode().startswith('no-pass')) and enabled:
-                print("en")
+            if (not data['rf_data'].decode().startswith('core')) and enabled:
                 p2_ser.write(data['rf_data'])
+
             data = data['rf_data'].decode().strip("\r\n").split('=', 1)
 
-            logging.debug(f"Recieved from XBee: {data}")
-
-            if data[0] == "no-pass.speech":
+            if data[0] == "core.speech":
                 if speech_engine == "festival":
                     speak_festival(data[1].strip("\r\n"))
                 elif speech_engine == "espeak":
                     espeak_engine.say(data[1].strip("\r\n"))
                     espeak_engine.runAndWait()
-            elif data[0] == "no-pass.speech-engine":
+            elif data[0] == "core.speech-engine":
                 speech_engine = data[1].strip("\r\n")
             elif data[0] == "robot.disable":
                 enabled = not data[1].lower() in ["true", "t"]
                 p2_ser.write("stop".encode("UTF-8"))
+            elif data[0] == "enabled":
+                enabled = data[1].lower() in ["true", "t"]
                 logging.info(f"Enabled: {enabled}")
-
-            if data[0] == "shutdown":
+            elif data[0] == "core.remotes.add":
+                connected_remotes.append(data[1])
+                logging.info(f"Wireless device connected: {data[1]}")
+                logging.info(f"Total devices: {connected_remotes}")
+            elif data[0] == "core.remotes.remove":
+                if data[1] in connected_remotes:
+                    connected_remotes.remove(data[1])
+                    logging.info(f"Wireless device disconnected: {data[1]}")
+                logging.info(f"Total devices: {connected_remotes}")
+            elif data[0] == "shutdown":
                 subprocess.run(["systemctl", "poweroff"])
         except Exception as e:
             data_to_remote("robot.disable=True")
@@ -134,10 +155,31 @@ def disable():
     p2_ser.write("stop".encode("UTF-8"))
 
 
-def update_zmq():
-    while True:
-        socket.send_json(sensors)
-        time.sleep(ZMQ_INTERVAL)
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        logging.info("Connected to MQTT Broker")
+    else:
+        logging.critical("Failed to connect, return code %d\n", rc)
+        sys.exit()
+
+
+def on_message(client, userdata, msg):
+    global sensors
+
+    if TOPIC_ROLL in msg.topic:
+        sensors["mpu"][0] = float(msg.payload.decode())
+    elif TOPIC_PITCH in msg.topic:
+        sensors["mpu"][1] = float(msg.payload.decode())
+    elif TOPIC_YAW in msg.topic:
+        sensors["mpu"][2] = float(msg.payload.decode())
+        data_to_remote(f"imu={sensors['mpu'][0]},{sensors['mpu'][1]},{sensors['mpu'][2]}")
+
+
+def publish(topic, msg):
+    result = client.publish(topic, msg)
+    status = result[0]
+    if status != 0:
+        logging.error(f"Failed to send message to topic {topic}")
 
 
 if __name__ == "__main__":
@@ -151,21 +193,16 @@ if __name__ == "__main__":
     print("\033[0m", end=None)
 
     # logging
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=settings["logging"]["level"])
 
     # serial
     xb_ser = serial.Serial(XB_SERIAL_PORT, baudrate=XB_BAUD_RATE)
-    xbee = XBee(xb_ser, escaped=True)
+    xbee = XBee(xb_ser, escaped=False)
 
     p2_ser = serial.Serial(P2_SERIAL_PORT, baudrate=P2_BAUD_RATE)
 
     # speech
     espeak_engine = pyttsx3.init("espeak")
-
-    # zmq
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind(f"tcp://*:{ZMQ_PORT}")
 
     # threads
     recv_thread = threading.Thread(target=recv_loop)
@@ -174,4 +211,16 @@ if __name__ == "__main__":
     remote_recv_thread = threading.Thread(target=remote_recv_loop, daemon=True)
     remote_recv_thread.start()
 
-    zmq_thread = threading.Thread(target=update_zmq, daemon=True)
+    # mqtt
+    client = mqtt_client.Client(CLI_ID)
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.connect(BROKER, PORT)
+    client.subscribe(TOPIC_ROLL)
+    client.subscribe(TOPIC_PITCH)
+    client.subscribe(TOPIC_YAW)
+
+    # init
+    data_to_remote("core.service.init=kevinbot.com")
+
+    client.loop_forever()

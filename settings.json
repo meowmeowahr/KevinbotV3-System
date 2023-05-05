@@ -2,17 +2,28 @@
     "sysinfo": {
         "interval": 2
     },
+    "logging": {
+		"level": 10
+	},
     "services": {
-        "zmq": {
-            "port": 1872,
-            "interval": 2
+        "mqtt": {
+            "port": 1883,
+            "address": "localhost"
         },
         "serial": {
             "p2-baud": 230400,
             "p2-port": "/dev/ttyAMA1",
-            "xb-baud": 230400,
+            "xb-baud": 460800,
             "xb-port": "/dev/ttyS0"
         },
+        "mpu": {
+			"address": 68,
+			"update-speed": 0.4,
+			"topic-roll": "kevinbot/mpu/roll",
+			"topic-pitch": "kevinbot/mpu/pitch",
+			"topic-yaw": "kevinbot/mpu/yaw"
+		},
         "data_max": 80
     }
 }
+
