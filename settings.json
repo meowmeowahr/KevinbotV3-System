@@ -18,19 +18,19 @@
         },
         "mpu": {
 			"address": 68,
-			"update-speed": 0.4,
+			"update-speed": 0.1,
 			"topic-roll": "kevinbot/mpu/roll",
 			"topic-pitch": "kevinbot/mpu/pitch",
 			"topic-yaw": "kevinbot/mpu/yaw"
 		},
 		"bme": {
 			"address": 68,
-			"update-speed": 0.5,
+			"update-speed": 0.1,
 			"topic-temp": "kevinbot/bme/temperature",
 			"topic-humidity": "kevinbot/bme/humidity",
 			"topic-pressure": "kevinbot/bme/pressure"
 		},
-        "data_max": 80
+        "data_max": 50
     }
 }
 

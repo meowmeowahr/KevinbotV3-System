@@ -14,6 +14,7 @@ from paho.mqtt import client as mqtt_client
 
 from xbee import XBee
 
+__version__ = "1.0.0"
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
@@ -31,6 +32,9 @@ PORT = settings["services"]["mqtt"]["port"]
 TOPIC_ROLL = settings["services"]["mpu"]["topic-roll"]
 TOPIC_PITCH = settings["services"]["mpu"]["topic-pitch"]
 TOPIC_YAW = settings["services"]["mpu"]["topic-yaw"]
+TOPIC_TEMP = settings["services"]["bme"]["topic-temp"]
+TOPIC_HUMI = settings["services"]["bme"]["topic-humidity"]
+TOPIC_PRESSURE = settings["services"]["bme"]["topic-pressure"]
 CLI_ID = f'kevinbot-com-service-{uuid.uuid4()}'
 
 USING_BATT_2 = False
@@ -42,7 +46,7 @@ connected_remotes = []
 last_alive_msg = datetime.datetime.now()
 is_alive = True
 
-sensors = {"batts": [-1, -1], "mpu": [0, 0, 0]}
+sensors = {"batts": [-1, -1], "mpu": [0, 0, 0], "bme": [0, 0, 0]}
 
 shown_batt1_notif = False
 shown_batt2_notif = False
@@ -136,14 +140,29 @@ def remote_recv_loop():
                 enabled = data[1].lower() in ["true", "t"]
                 logging.info(f"Enabled: {enabled}")
             elif data[0] == "core.remotes.add":
-                connected_remotes.append(data[1])
-                logging.info(f"Wireless device connected: {data[1]}")
-                logging.info(f"Total devices: {connected_remotes}")
+                if not data[1] in connected_remotes:
+                    connected_remotes.append(data[1])
+                    logging.info(f"Wireless device connected: {data[1]}")
+                    logging.info(f"Total devices: {connected_remotes}")
+                data_to_remote(f"core.enabled={enabled}")
+                data_to_remote(f"core.speech-engine={speech_engine}")
             elif data[0] == "core.remotes.remove":
                 if data[1] in connected_remotes:
                     connected_remotes.remove(data[1])
                     logging.info(f"Wireless device disconnected: {data[1]}")
                 logging.info(f"Total devices: {connected_remotes}")
+            elif data[0] == "core.remotes.get_full":
+                mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"]
+                mesh = ",".join(mesh + connected_remotes)
+                mesh = [mesh[i:i+settings["services"]["data_max"]] for i in range(0, len(mesh), settings["services"]["data_max"])]
+                print(mesh)
+                for count, part in enumerate(mesh):
+                    data_to_remote(f"core.full_mesh:{count}:{len(mesh)-1}={mesh[count]}")
+                    print(f"core.full_mesh:{count}:{len(mesh)-1}={','.join(mesh)}")
+            elif data[0] == "core.ping":
+                if data[1].split(",")[0] == "KEVINBOTV3":
+                    logging.info(f"Ping from {data[1].split(',')[1]}")
+                    subprocess.run(["notify-send", "Ping!", f"Ping from {data[1].split(',')[1]}"])
             elif data[0] == "shutdown":
                 subprocess.run(["systemctl", "poweroff"])
         except Exception as e:
@@ -159,7 +178,7 @@ def on_connect(client, userdata, flags, rc):
     if rc == 0:
         logging.info("Connected to MQTT Broker")
     else:
-        logging.critical("Failed to connect, return code %d\n", rc)
+        logging.critical(f"Failed to connect, return code {rc}")
         sys.exit()
 
 
@@ -173,6 +192,13 @@ def on_message(client, userdata, msg):
     elif TOPIC_YAW in msg.topic:
         sensors["mpu"][2] = float(msg.payload.decode())
         data_to_remote(f"imu={sensors['mpu'][0]},{sensors['mpu'][1]},{sensors['mpu'][2]}")
+    elif TOPIC_TEMP in msg.topic:
+        sensors["bme"][0] = float(msg.payload.decode())
+    elif TOPIC_HUMI in msg.topic:
+        sensors["bme"][1] = float(msg.payload.decode())
+    elif TOPIC_PRESSURE in msg.topic:
+        sensors["bme"][2] = float(msg.payload.decode())
+        data_to_remote(f"bme={sensors['bme'][0]},{float(sensors['bme'][0]) * 1.8 + 32},{sensors['bme'][1]},{sensors['bme'][2]}")
 
 
 def publish(topic, msg):
@@ -219,8 +245,12 @@ if __name__ == "__main__":
     client.subscribe(TOPIC_ROLL)
     client.subscribe(TOPIC_PITCH)
     client.subscribe(TOPIC_YAW)
+    client.subscribe(TOPIC_TEMP)
+    client.subscribe(TOPIC_HUMI)
+    client.subscribe(TOPIC_PRESSURE)
 
     # init
     data_to_remote("core.service.init=kevinbot.com")
+    data_to_remote("core.enabled=False")
 
     client.loop_forever()
