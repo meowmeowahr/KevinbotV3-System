@@ -198,7 +198,7 @@ def on_message(client, userdata, msg):
         sensors["bme"][1] = float(msg.payload.decode())
     elif TOPIC_PRESSURE in msg.topic:
         sensors["bme"][2] = float(msg.payload.decode())
-        data_to_remote(f"bme={sensors['bme'][0]},{float(sensors['bme'][0]) * 1.8 + 32},{sensors['bme'][1]},{sensors['bme'][2]}")
+        data_to_remote(f"bme={sensors['bme'][0]},{round(float(sensors['bme'][0]) * 1.8 + 32, 2)},{sensors['bme'][1]},{sensors['bme'][2]}")
 
 
 def publish(topic, msg):
