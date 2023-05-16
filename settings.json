@@ -3,8 +3,20 @@
         "interval": 2
     },
     "logging": {
-		"level": 10
-	},
+        "level": 10
+    },
+    "constants": {
+        "bauds": [
+            4800,
+            9600,
+            19200,
+            38400,
+            57600,
+            115200,
+            230400,
+            460800
+        ]
+    },
     "services": {
         "mqtt": {
             "port": 1883,
@@ -17,20 +29,19 @@
             "xb-port": "/dev/ttyS0"
         },
         "mpu": {
-			"address": 68,
-			"update-speed": 0.1,
-			"topic-roll": "kevinbot/mpu/roll",
-			"topic-pitch": "kevinbot/mpu/pitch",
-			"topic-yaw": "kevinbot/mpu/yaw"
-		},
-		"bme": {
-			"address": 68,
-			"update-speed": 0.1,
-			"topic-temp": "kevinbot/bme/temperature",
-			"topic-humidity": "kevinbot/bme/humidity",
-			"topic-pressure": "kevinbot/bme/pressure"
-		},
+            "address": 68,
+            "update-speed": 0.1,
+            "topic-roll": "kevinbot/mpu/roll",
+            "topic-pitch": "kevinbot/mpu/pitch",
+            "topic-yaw": "kevinbot/mpu/yaw"
+        },
+        "bme": {
+            "address": 68,
+            "update-speed": 0.1,
+            "topic-temp": "kevinbot/bme/temperature",
+            "topic-humidity": "kevinbot/bme/humidity",
+            "topic-pressure": "kevinbot/bme/pressure"
+        },
         "data_max": 50
     }
 }
-

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from settings_panels import ThemePanel, SysInfoPanel
+from settings_panels import ThemePanel, SysInfoPanel, CommsPanel
 import os
 import sys
 import qtawesome as qta
@@ -12,6 +12,7 @@ CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 HOME_WIDGET_INDEX = 0
 THEME_PANEL_INDEX = 1
 SYSINFO_PANEL_INDEX = 2
+COMMS_PANEL_INDEX = 3
 
 
 class MainWindow(QMainWindow):
@@ -43,7 +44,7 @@ class MainWindow(QMainWindow):
         self.theme_button.setObjectName("Kevinbot3_Settings_Panel_Button")
         self.theme_button.setText(" " + ThemePanel.name)
         self.theme_button.setIconSize(QSize(24, 24))
-        self.theme_button.setFixedWidth(128)
+        self.theme_button.setFixedWidth(180)
         self.theme_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.theme_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(THEME_PANEL_INDEX))
         self.item_layout.addWidget(self.theme_button)
@@ -52,10 +53,19 @@ class MainWindow(QMainWindow):
         self.sysinfo_button.setObjectName("Kevinbot3_Settings_Panel_Button")
         self.sysinfo_button.setText(" " + SysInfoPanel.name)
         self.sysinfo_button.setIconSize(QSize(24, 24))
-        self.sysinfo_button.setFixedWidth(128)
+        self.sysinfo_button.setFixedWidth(180)
         self.sysinfo_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.sysinfo_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(SYSINFO_PANEL_INDEX))
         self.item_layout.addWidget(self.sysinfo_button)
+
+        self.comms_button = QToolButton()
+        self.comms_button.setObjectName("Kevinbot3_Settings_Panel_Button")
+        self.comms_button.setText(" " + CommsPanel.name)
+        self.comms_button.setIconSize(QSize(24, 24))
+        self.comms_button.setFixedWidth(180)
+        self.comms_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.comms_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(COMMS_PANEL_INDEX))
+        self.item_layout.addWidget(self.comms_button)
 
         self.scroll_widget.setLayout(self.item_layout)
 
@@ -86,6 +96,9 @@ class MainWindow(QMainWindow):
         self.sysinfo_panel = SysInfoPanel(self)
         self.stacked_widget.insertWidget(SYSINFO_PANEL_INDEX, self.sysinfo_panel)
 
+        self.comms_panel = CommsPanel(self)
+        self.stacked_widget.insertWidget(COMMS_PANEL_INDEX, self.comms_panel)
+
         self.update_icons()
 
         self.show()
@@ -99,6 +112,7 @@ class MainWindow(QMainWindow):
 
         self.theme_button.setIcon(QIcon(qta.icon("fa5s.paint-roller", color=self.fg_color)))
         self.sysinfo_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.fg_color)))
+        self.comms_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.fg_color)))
 
 
 if __name__ == "__main__":

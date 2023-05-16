@@ -152,3 +152,54 @@ class SysInfoPanel(QScrollArea):
         self.layout.addWidget(self.memory)
 
         self.root_layout.addStretch()
+
+
+class CommsPanel(QScrollArea):
+    name = "Communication"
+
+    def __init__(self, parent):
+        super().__init__()
+
+        self.setObjectName("Kevinbot3_SettingsPanel_Panel")
+        self.setWidgetResizable(True)
+
+        self.widget = QWidget()
+        self.setWidget(self.widget)
+
+        self.root_layout = QVBoxLayout()
+        self.widget.setLayout(self.root_layout)
+
+        self.label = QLabel(self.name)
+        self.label.setStyleSheet("font-weight: bold;")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.root_layout.addWidget(self.label)
+
+        self.root_layout.addStretch()
+
+        self.layout = QVBoxLayout()
+        self.root_layout.addLayout(self.layout)
+
+        self.toolbox = QToolBox()
+        self.layout.addWidget(self.toolbox)
+
+        self.baud_item = QWidget()
+        self.baud_layout = QVBoxLayout()
+        self.baud_item.setLayout(self.baud_layout)
+
+        self.core_baud_layout = QHBoxLayout()
+        self.baud_layout.addLayout(self.core_baud_layout)
+
+        self.core_baud_label = QLabel("Core Baud")
+        self.core_baud_layout.addWidget(self.core_baud_label)
+
+        self.core_baud_combo = QComboBox()
+        self.core_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
+        self.core_baud_combo.setCurrentText(str(settings["services"]["serial"]["p2-baud"]))
+        self.core_baud_combo.currentTextChanged.connect(self.update_core_baud)
+        self.core_baud_layout.addWidget(self.core_baud_combo)
+
+        self.toolbox.addItem(self.baud_item, "Baud Rates")
+
+    def update_core_baud(self, baud):
+        settings["services"]["serial"]["p2-baud"] = int(baud)
+        save_json()
