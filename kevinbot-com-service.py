@@ -54,8 +54,8 @@ shown_batt2_notif = False
 enabled = False
 
 
-def map_range(value, inMin, inMax, outMin, outMax):
-    return outMin + (((value - inMin) / (inMax - inMin)) * (outMax - outMin))
+def map_range(value, in_min, in_max, out_min, out_max):
+    return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
 
 
 def speak_festival(text):
@@ -125,6 +125,8 @@ def remote_recv_loop():
 
             data = data['rf_data'].decode().strip("\r\n").split('=', 1)
 
+            print(data)
+
             if data[0] == "core.speech":
                 if speech_engine == "festival":
                     speak_festival(data[1].strip("\r\n"))
@@ -154,7 +156,8 @@ def remote_recv_loop():
             elif data[0] == "core.remotes.get_full":
                 mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"]
                 mesh = ",".join(mesh + connected_remotes)
-                mesh = [mesh[i:i+settings["services"]["data_max"]] for i in range(0, len(mesh), settings["services"]["data_max"])]
+                mesh = [mesh[i:i+settings["services"]["data_max"]] for i in range(0, len(mesh),
+                                                                                  settings["services"]["data_max"])]
                 print(mesh)
                 for count, part in enumerate(mesh):
                     data_to_remote(f"core.full_mesh:{count}:{len(mesh)-1}={mesh[count]}")
@@ -198,7 +201,8 @@ def on_message(client, userdata, msg):
         sensors["bme"][1] = float(msg.payload.decode())
     elif TOPIC_PRESSURE in msg.topic:
         sensors["bme"][2] = float(msg.payload.decode())
-        data_to_remote(f"bme={sensors['bme'][0]},{round(float(sensors['bme'][0]) * 1.8 + 32, 2)},{sensors['bme'][1]},{sensors['bme'][2]}")
+        data_to_remote(f"bme={sensors['bme'][0]},"
+                       f"{round(float(sensors['bme'][0]) * 1.8 + 32, 2)},{sensors['bme'][1]},{sensors['bme'][2]}")
 
 
 def publish(topic, msg):
