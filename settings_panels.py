@@ -209,10 +209,14 @@ class CommsPanel(QScrollArea):
         self.xbee_baud_combo = QComboBox()
         self.xbee_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
         self.xbee_baud_combo.setCurrentText(str(settings["services"]["serial"]["xb-baud"]))
-        self.xbee_baud_combo.currentTextChanged.connect(self.update_core_baud)
+        self.xbee_baud_combo.currentTextChanged.connect(self.update_xbee_baud)
         self.xbee_baud_layout.addWidget(self.xbee_baud_combo)
 
         self.toolbox.addItem(self.baud_item, "Baud Rates")
+
+
+        self.restart_warning = QLabel("A restart is required for these settings to update")
+        self.layout.addWidget(self.restart_warning)
 
     @staticmethod
     def update_core_baud(baud: str):
