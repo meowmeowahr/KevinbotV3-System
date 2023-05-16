@@ -2,6 +2,9 @@
     "sysinfo": {
         "interval": 2
     },
+    "settings": {
+        "page": 2
+    },
     "logging": {
         "level": 10
     },

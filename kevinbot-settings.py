@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from settings_panels import ThemePanel, SysInfoPanel, CommsPanel
+from settings_panels import ThemePanel, SysInfoPanel, CommsPanel, settings, save_json
 import os
 import sys
 import qtawesome as qta
@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         self.theme_button.setIconSize(QSize(24, 24))
         self.theme_button.setFixedWidth(180)
         self.theme_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.theme_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(THEME_PANEL_INDEX))
+        self.theme_button.clicked.connect(lambda: self.set_page(THEME_PANEL_INDEX))
         self.item_layout.addWidget(self.theme_button)
 
         self.sysinfo_button = QToolButton()
@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
         self.sysinfo_button.setIconSize(QSize(24, 24))
         self.sysinfo_button.setFixedWidth(180)
         self.sysinfo_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.sysinfo_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(SYSINFO_PANEL_INDEX))
+        self.sysinfo_button.clicked.connect(lambda: self.set_page(SYSINFO_PANEL_INDEX))
         self.item_layout.addWidget(self.sysinfo_button)
 
         self.comms_button = QToolButton()
@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         self.comms_button.setIconSize(QSize(24, 24))
         self.comms_button.setFixedWidth(180)
         self.comms_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.comms_button.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(COMMS_PANEL_INDEX))
+        self.comms_button.clicked.connect(lambda: self.set_page(COMMS_PANEL_INDEX))
         self.item_layout.addWidget(self.comms_button)
 
         self.scroll_widget.setLayout(self.item_layout)
@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
         self.stacked_widget.insertWidget(COMMS_PANEL_INDEX, self.comms_panel)
 
         self.update_icons()
-
+        self.stacked_widget.setCurrentIndex(settings["settings"]["page"])
         self.show()
 
     def update_icons(self):
@@ -113,6 +113,11 @@ class MainWindow(QMainWindow):
         self.theme_button.setIcon(QIcon(qta.icon("fa5s.paint-roller", color=self.fg_color)))
         self.sysinfo_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.fg_color)))
         self.comms_button.setIcon(QIcon(qta.icon("mdi.transit-connection-variant", color=self.fg_color)))
+
+    def set_page(self, page: int):
+        self.stacked_widget.setCurrentIndex(page)
+        settings["settings"]["page"] = page
+        save_json()
 
 
 if __name__ == "__main__":
