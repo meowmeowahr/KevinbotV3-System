@@ -15,7 +15,6 @@ from paho.mqtt import client as mqtt_client
 
 from imusensor.MPU9250 import MPU9250
 
-
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
 
@@ -27,7 +26,6 @@ TOPIC_ROLL = settings["services"]["mpu"]["topic-roll"]
 TOPIC_PITCH = settings["services"]["mpu"]["topic-pitch"]
 TOPIC_YAW = settings["services"]["mpu"]["topic-yaw"]
 CLI_ID = f'kevinbot-mpu-{uuid.uuid4()}'
-
 
 bus = smbus.SMBus(1)
 imu = MPU9250.MPU9250(bus, int(str(settings["services"]["mpu"]["address"]), 16))
@@ -41,9 +39,11 @@ def on_connect(client, userdata, flags, rc):
         logging.critical("Failed to connect, return code %d\n", rc)
         sys.exit()
 
+
 client = mqtt_client.Client(CLI_ID)
 client.on_connect = on_connect
 client.connect(BROKER, PORT)
+
 
 def publish(topic, msg):
     result = client.publish(topic, msg)
