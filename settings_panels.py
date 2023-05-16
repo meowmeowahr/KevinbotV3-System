@@ -200,6 +200,7 @@ class CommsPanel(QScrollArea):
 
         self.toolbox.addItem(self.baud_item, "Baud Rates")
 
-    def update_core_baud(self, baud):
+    @staticmethod
+    def update_core_baud(baud: str):
         settings["services"]["serial"]["p2-baud"] = int(baud)
         save_json()

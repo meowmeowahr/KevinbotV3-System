@@ -112,7 +112,7 @@ class MainWindow(QMainWindow):
 
         self.theme_button.setIcon(QIcon(qta.icon("fa5s.paint-roller", color=self.fg_color)))
         self.sysinfo_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.fg_color)))
-        self.comms_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.fg_color)))
+        self.comms_button.setIcon(QIcon(qta.icon("mdi.transit-connection-variant", color=self.fg_color)))
 
 
 if __name__ == "__main__":
