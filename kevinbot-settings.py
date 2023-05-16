@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from KevinbotUI import KBTheme
 from settings_panels import ThemePanel, SysInfoPanel, CommsPanel, settings, save_json
 import os
 import sys
@@ -107,8 +108,10 @@ class MainWindow(QMainWindow):
         self.ensurePolished()
         if theme_control.get_dark():
             self.fg_color = Qt.GlobalColor.white
+            KBTheme.load(self, mode=KBTheme.Modes.Dark)
         else:
             self.fg_color = Qt.GlobalColor.black
+            KBTheme.load(self, mode=KBTheme.Modes.Light)
 
         self.theme_button.setIcon(QIcon(qta.icon("fa5s.paint-roller", color=self.fg_color)))
         self.sysinfo_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.fg_color)))
