@@ -198,9 +198,28 @@ class CommsPanel(QScrollArea):
         self.core_baud_combo.currentTextChanged.connect(self.update_core_baud)
         self.core_baud_layout.addWidget(self.core_baud_combo)
 
+        # XBee
+
+        self.xbee_baud_layout = QHBoxLayout()
+        self.baud_layout.addLayout(self.xbee_baud_layout)
+
+        self.xbee_baud_label = QLabel("XBee Baud")
+        self.xbee_baud_layout.addWidget(self.xbee_baud_label)
+
+        self.xbee_baud_combo = QComboBox()
+        self.xbee_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
+        self.xbee_baud_combo.setCurrentText(str(settings["services"]["serial"]["xb-baud"]))
+        self.xbee_baud_combo.currentTextChanged.connect(self.update_core_baud)
+        self.xbee_baud_layout.addWidget(self.xbee_baud_combo)
+
         self.toolbox.addItem(self.baud_item, "Baud Rates")
 
     @staticmethod
     def update_core_baud(baud: str):
         settings["services"]["serial"]["p2-baud"] = int(baud)
+        save_json()
+
+    @staticmethod
+    def update_xbee_baud(baud: str):
+        settings["services"]["serial"]["xb-baud"] = int(baud)
         save_json()

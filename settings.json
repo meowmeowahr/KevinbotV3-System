@@ -36,7 +36,6 @@
             "topic-yaw": "kevinbot/mpu/yaw"
         },
         "bme": {
-            "address": 68,
             "update-speed": 0.1,
             "topic-temp": "kevinbot/bme/temperature",
             "topic-humidity": "kevinbot/bme/humidity",
