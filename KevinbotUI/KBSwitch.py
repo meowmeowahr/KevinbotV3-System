@@ -45,7 +45,7 @@ class SwitchCircle(QWidget):
 		painter.setRenderHint(QPainter.HighQualityAntialiasing)
 		painter.setPen(Qt.NoPen)
 		painter.setBrush(QColor(self.color))
-		painter.drawEllipse(0, 0, 22, 22)
+		painter.drawEllipse(0, 0, 24, 24)
 		painter.end()
 
 	def set_color(self, value):
@@ -94,24 +94,24 @@ class SwitchControl(QCheckBox):
 			super().__init__()
 		else:
 			super().__init__(parent=parent)
-		self.setFixedSize(60, 28)
+		self.setFixedSize(62, 32)
 		if change_cursor:
 			self.setCursor(Qt.PointingHandCursor)
 		self.bg_color = bg_color
 		self.circle_color = circle_color
 		self.animation_curve = animation_curve
 		self.animation_duration = animation_duration
-		self.__circle = SwitchCircle(self, (3, self.width() - 26), self.circle_color, self.animation_curve,
+		self.__circle = SwitchCircle(self, (4, self.width() - 28), self.circle_color, self.animation_curve,
 		                             self.animation_duration)
 		self.__circle_position = 3
 		self.active_color = active_color
 		self.auto = False
 		self.pos_on_press = None
 		if checked:
-			self.__circle.move(self.width() - 26, 3)
+			self.__circle.move(self.width() - 28, 4)
 			self.setChecked(True)
 		elif not checked:
-			self.__circle.move(3, 3)
+			self.__circle.move(4, 4)
 			self.setChecked(False)
 		self.animation = QPropertyAnimation(self.__circle, b"pos")
 		self.animation.setEasingCurve(animation_curve)
@@ -162,10 +162,10 @@ class SwitchControl(QCheckBox):
 		self.animation.stop()
 		self.animation.setStartValue(self.__circle.pos())
 		if checked:
-			self.animation.setEndValue(QPoint(self.width() - 26, self.__circle.y()))
+			self.animation.setEndValue(QPoint(self.width() - 28, self.__circle.y()))
 			self.setChecked(True)
 		if not checked:
-			self.animation.setEndValue(QPoint(3, self.__circle.y()))
+			self.animation.setEndValue(QPoint(4, self.__circle.y()))
 			self.setChecked(False)
 		self.animation.start()
 
