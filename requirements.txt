@@ -4,7 +4,7 @@ opencv-python
 pyserial~=3.5
 XBee~=2.3.2
 pyttsx3~=2.90
-psutil~=5.9.4
+psutil~=5.9.5
 py-cpuinfo~=9.0.0
 QtAwesome~=1.2.3
 pyqtdarktheme~=2.1.0
