@@ -174,8 +174,6 @@ class CommsPanel(QScrollArea):
         self.label.setAlignment(Qt.AlignCenter)
         self.root_layout.addWidget(self.label)
 
-        self.root_layout.addStretch()
-
         self.layout = QVBoxLayout()
         self.root_layout.addLayout(self.layout)
 
@@ -230,6 +228,18 @@ class CommsPanel(QScrollArea):
         self.core_port_edit.textChanged.connect(self.update_core_port)
         self.core_port_layout.addWidget(self.core_port_edit)
 
+        self.xbee_port_layout = QHBoxLayout()
+        self.ports_layout.addLayout(self.xbee_port_layout)
+
+        self.xbee_port_label = QLabel("XBee Port")
+        self.xbee_port_layout.addWidget(self.xbee_port_label)
+
+        self.xbee_port_edit = QLineEdit()
+        self.xbee_port_edit.setMaximumWidth(180)
+        self.xbee_port_edit.setText(str(settings["services"]["serial"]["xb-port"]))
+        self.xbee_port_edit.textChanged.connect(self.update_xbee_port)
+        self.xbee_port_layout.addWidget(self.xbee_port_edit)
+
         self.toolbox.addItem(self.ports_item, "Serial Ports")
 
         self.restart_warning = QLabel("A restart is required for these settings to update")
@@ -248,4 +258,9 @@ class CommsPanel(QScrollArea):
     @staticmethod
     def update_core_port(port: str):
         settings["services"]["serial"]["p2-port"] = port
+        save_json()
+
+    @staticmethod
+    def update_xbee_port(port: str):
+        settings["services"]["serial"]["xb-port"] = port
         save_json()
