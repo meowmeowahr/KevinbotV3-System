@@ -31,6 +31,10 @@
             "xb-baud": 460800,
             "xb-port": "/dev/ttyS0"
         },
+        "com": {
+            "topic-batt1": "kevinbot/battery/batt1",
+            "topic-batt2": "kevinbot/battery/batt2"
+        },
         "mpu": {
             "address": 68,
             "update-speed": 0.1,

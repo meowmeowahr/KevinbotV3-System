@@ -4,7 +4,7 @@ import subprocess
 import threading
 import logging
 import json
-import time
+import sys
 import uuid
 
 import playsound
@@ -83,6 +83,8 @@ def recv_loop():
 
                 sensors["batts"][0] = float(line[1][0]) / 10
                 sensors["batts"][1] = float(line[1][1]) / 10
+                client.publish(settings["services"]["com"]["topic-batt1"], sensors["batts"][0])
+                client.publish(settings["services"]["com"]["topic-batt2"], sensors["batts"][1])
 
                 if int(line[1][0]) < BATT_LOW_VOLT:
                     playsound.playsound(os.path.join(os.curdir,
