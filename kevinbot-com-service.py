@@ -1,3 +1,5 @@
+from typing import Dict, Any, Final, List
+
 import datetime
 import os
 import subprocess
@@ -16,29 +18,29 @@ from xbee import XBee
 
 __version__ = "1.0.0"
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
+CURRENT_DIR: Final = os.path.dirname(os.path.realpath(__file__))
+SETTINGS_PATH: Final = os.path.join(CURRENT_DIR, 'settings.json')
 
 settings = json.load(open(SETTINGS_PATH, 'r'))
 
-XB_SERIAL_PORT = settings["services"]["serial"]["xb-port"]
-XB_BAUD_RATE = settings["services"]["serial"]["xb-baud"]
+XB_SERIAL_PORT: Final = settings["services"]["serial"]["xb-port"]
+XB_BAUD_RATE: Final = settings["services"]["serial"]["xb-baud"]
 
-P2_SERIAL_PORT = settings["services"]["serial"]["p2-port"]
-P2_BAUD_RATE = settings["services"]["serial"]["p2-baud"]
+P2_SERIAL_PORT: Final = settings["services"]["serial"]["p2-port"]
+P2_BAUD_RATE: Final = settings["services"]["serial"]["p2-baud"]
 
-BROKER = settings["services"]["mqtt"]["address"]
-PORT = settings["services"]["mqtt"]["port"]
-TOPIC_ROLL = settings["services"]["mpu"]["topic-roll"]
-TOPIC_PITCH = settings["services"]["mpu"]["topic-pitch"]
-TOPIC_YAW = settings["services"]["mpu"]["topic-yaw"]
-TOPIC_TEMP = settings["services"]["bme"]["topic-temp"]
-TOPIC_HUMI = settings["services"]["bme"]["topic-humidity"]
-TOPIC_PRESSURE = settings["services"]["bme"]["topic-pressure"]
-CLI_ID = f'kevinbot-com-service-{uuid.uuid4()}'
+BROKER: Final = settings["services"]["mqtt"]["address"]
+PORT: Final = settings["services"]["mqtt"]["port"]
+TOPIC_ROLL: Final = settings["services"]["mpu"]["topic-roll"]
+TOPIC_PITCH: Final = settings["services"]["mpu"]["topic-pitch"]
+TOPIC_YAW: Final = settings["services"]["mpu"]["topic-yaw"]
+TOPIC_TEMP: Final = settings["services"]["bme"]["topic-temp"]
+TOPIC_HUMI: Final = settings["services"]["bme"]["topic-humidity"]
+TOPIC_PRESSURE: Final = settings["services"]["bme"]["topic-pressure"]
+CLI_ID: Final = f'kevinbot-com-service-{uuid.uuid4()}'
 
-USING_BATT_2 = False
-BATT_LOW_VOLT = 99
+USING_BATT_2: Final = False
+BATT_LOW_VOLT: Final = 90
 
 speech_engine = "espeak"
 connected_remotes = []
@@ -46,7 +48,7 @@ connected_remotes = []
 last_alive_msg = datetime.datetime.now()
 is_alive = True
 
-sensors = {"batts": [-1, -1], "mpu": [0, 0, 0], "bme": [0, 0, 0]}
+sensors: Dict[Any, Any] = {"batts": [-1, -1], "mpu": [0, 0, 0], "bme": [0, 0, 0]}
 
 shown_batt1_notif = False
 shown_batt2_notif = False
@@ -74,7 +76,7 @@ def recv_loop():
 
     while True:
         try:
-            line = p2_ser.readline().decode().strip("\n").split("=")
+            line: List[Any] = p2_ser.readline().decode().strip("\n").split("=")
 
             data_to_remote("{}={}\r".format(line[0], line[1]))
 
@@ -173,6 +175,7 @@ def remote_recv_loop():
         except Exception as e:
             data_to_remote("robot.disable=True")
             disable()
+            logging.error(f"Exception in Remote Loop: {e}")
 
 
 def disable():
@@ -222,6 +225,7 @@ if __name__ == "__main__":
         print(pyfiglet.Figlet().renderText("Kevinbot COM"))
     except ImportError:
         print("\033[94mKevinbot COM")
+        pyfiglet = None
     print("\033[0m", end=None)
 
     # logging

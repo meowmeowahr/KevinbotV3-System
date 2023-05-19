@@ -66,6 +66,7 @@ class ThemePanel(QWidget):
         self.theme_select_label = QLabel("Dark Mode:")
         self.theme_select_layout.addWidget(self.theme_select_label)
 
+        self.ensurePolished()
         self.theme_select_switch = SwitchControl()
         self.theme_select_switch.set_active_color(QColor(self.palette().color(QPalette.Highlight)))
         self.theme_select_switch.set_bg_color(QColor(self.palette().color(QPalette.ColorRole.Dark)))

@@ -29,6 +29,11 @@ class MainWindow(QMainWindow):
         self.main_layout = QHBoxLayout()
         self.widget.setLayout(self.main_layout)
 
+        if theme_control.get_dark():
+            KBTheme.load(self, mode=KBTheme.Modes.Dark)
+        else:
+            KBTheme.load(self, mode=KBTheme.Modes.Light)
+
         self.scroll = QScrollArea()
 
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
