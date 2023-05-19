@@ -85,8 +85,9 @@ def recv_loop():
 
                 sensors["batts"][0] = float(line[1][0]) / 10
                 sensors["batts"][1] = float(line[1][1]) / 10
-                client.publish(settings["services"]["com"]["topic-batt1"], sensors["batts"][0])
-                client.publish(settings["services"]["com"]["topic-batt2"], sensors["batts"][1])
+                if client:
+                    client.publish(settings["services"]["com"]["topic-batt1"], sensors["batts"][0])
+                    client.publish(settings["services"]["com"]["topic-batt2"], sensors["batts"][1])
 
                 if int(line[1][0]) < BATT_LOW_VOLT:
                     playsound.playsound(os.path.join(os.curdir,
@@ -168,6 +169,9 @@ def remote_recv_loop():
                     print(f"core.full_mesh:{count}:{len(mesh)-1}={','.join(mesh)}")
             elif data[0] == "core.ping":
                 if data[1].split(",")[0] == "KEVINBOTV3":
+                    threading.Thread(target=playsound.playsound,
+                                     args=(os.path.join(os.curdir, "sounds/device-notify.wav"),),
+                                     daemon=True).start()
                     logging.info(f"Ping from {data[1].split(',')[1]}")
                     subprocess.run(["notify-send", "Ping!", f"Ping from {data[1].split(',')[1]}"])
             elif data[0] == "shutdown":
@@ -241,6 +245,8 @@ if __name__ == "__main__":
     espeak_engine = pyttsx3.init("espeak")
 
     # threads
+    client = None
+
     recv_thread = threading.Thread(target=recv_loop)
     recv_thread.start()
 
