@@ -64,6 +64,12 @@ def speak_festival(text):
     os.system('echo "{}" | festival --tts'.format(text.replace("Kevinbot",
                                                                "Kevinbought")))
 
+def get_uptime():
+    with open('/proc/uptime', 'r') as f:
+        uptime_seconds = float(f.readline().split()[0])
+
+    return uptime_seconds
+
 
 def data_to_remote(data):
     xbee.send("tx", dest_addr=b'\x00\x00',
@@ -111,10 +117,16 @@ def recv_loop():
             elif line[0] == "robot.disable":
                 enabled = not line[1].lower() in ["true", "t"]
                 logging.info(f"Enabled: {enabled}")
+            if line[0] == "alive":
+                # System Tick
+                tick()
         except (IndexError, ValueError):
             # data is corrupt
             pass
 
+
+def tick():
+    data_to_remote(f"os_uptime={round(get_uptime())}")
 
 def remote_recv_loop():
     global speech_engine
