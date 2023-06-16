@@ -55,15 +55,6 @@ class MainWindow(QMainWindow):
         self.theme_button.clicked.connect(lambda: self.set_page(THEME_PANEL_INDEX))
         self.item_layout.addWidget(self.theme_button)
 
-        self.sysinfo_button = QToolButton()
-        self.sysinfo_button.setObjectName("Kevinbot3_Settings_Panel_Button")
-        self.sysinfo_button.setText(" " + SysInfoPanel.name)
-        self.sysinfo_button.setIconSize(QSize(24, 24))
-        self.sysinfo_button.setFixedWidth(180)
-        self.sysinfo_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.sysinfo_button.clicked.connect(lambda: self.set_page(SYSINFO_PANEL_INDEX))
-        self.item_layout.addWidget(self.sysinfo_button)
-
         self.comms_button = QToolButton()
         self.comms_button.setObjectName("Kevinbot3_Settings_Panel_Button")
         self.comms_button.setText(" " + CommsPanel.name)
@@ -72,6 +63,15 @@ class MainWindow(QMainWindow):
         self.comms_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.comms_button.clicked.connect(lambda: self.set_page(COMMS_PANEL_INDEX))
         self.item_layout.addWidget(self.comms_button)
+
+        self.sysinfo_button = QToolButton()
+        self.sysinfo_button.setObjectName("Kevinbot3_Settings_Panel_Button")
+        self.sysinfo_button.setText(" " + SysInfoPanel.name)
+        self.sysinfo_button.setIconSize(QSize(24, 24))
+        self.sysinfo_button.setFixedWidth(180)
+        self.sysinfo_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.sysinfo_button.clicked.connect(lambda: self.set_page(SYSINFO_PANEL_INDEX))
+        self.item_layout.addWidget(self.sysinfo_button)
 
         self.scroll_widget.setLayout(self.item_layout)
 
