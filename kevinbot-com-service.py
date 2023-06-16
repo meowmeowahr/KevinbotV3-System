@@ -64,6 +64,7 @@ def speak_festival(text):
     os.system('echo "{}" | festival --tts'.format(text.replace("Kevinbot",
                                                                "Kevinbought")))
 
+
 def get_uptime():
     with open('/proc/uptime', 'r') as f:
         uptime_seconds = float(f.readline().split()[0])
@@ -119,14 +120,17 @@ def recv_loop():
                 logging.info(f"Enabled: {enabled}")
             if line[0] == "alive":
                 # System Tick
-                tick()
+                tick(int(line[1]))
         except (IndexError, ValueError):
             # data is corrupt
             pass
 
 
-def tick():
+def tick(tick):
     data_to_remote(f"os_uptime={round(get_uptime())}")
+    publish(settings["services"]["com"]["topic-sys-uptime"], get_uptime())
+    publish(settings["services"]["com"]["topic-core-uptime"], tick)
+
 
 def remote_recv_loop():
     global speech_engine

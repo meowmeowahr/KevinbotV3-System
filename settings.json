@@ -33,7 +33,9 @@
         },
         "com": {
             "topic-batt1": "kevinbot/battery/batt1",
-            "topic-batt2": "kevinbot/battery/batt2"
+            "topic-batt2": "kevinbot/battery/batt2",
+            "topic-sys-uptime": "kevinbot/uptimes/os",
+            "topic-core-uptime": "kevinbot/uptimes/core"
         },
         "mpu": {
             "address": 68,
