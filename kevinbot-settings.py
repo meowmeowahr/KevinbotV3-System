@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from KevinbotUI import KBTheme
-from settings_panels import ThemePanel, SysInfoPanel, CommsPanel, settings, save_json
+from settings_panels import ThemePanel, SysInfoPanel, CommsPanel, ServicesPanel, settings, save_json
 import os
 import sys
 import qtawesome as qta
@@ -14,6 +14,7 @@ HOME_WIDGET_INDEX = 0
 THEME_PANEL_INDEX = 1
 SYSINFO_PANEL_INDEX = 2
 COMMS_PANEL_INDEX = 3
+SERVICES_PANEL_INDEX = 4
 
 
 class MainWindow(QMainWindow):
@@ -64,6 +65,15 @@ class MainWindow(QMainWindow):
         self.comms_button.clicked.connect(lambda: self.set_page(COMMS_PANEL_INDEX))
         self.item_layout.addWidget(self.comms_button)
 
+        self.services_button = QToolButton()
+        self.services_button.setObjectName("Kevinbot3_Settings_Panel_Button")
+        self.services_button.setText(" " + ServicesPanel.name)
+        self.services_button.setIconSize(QSize(24, 24))
+        self.services_button.setFixedWidth(180)
+        self.services_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.services_button.clicked.connect(lambda: self.set_page(SERVICES_PANEL_INDEX))
+        self.item_layout.addWidget(self.services_button)
+
         self.sysinfo_button = QToolButton()
         self.sysinfo_button.setObjectName("Kevinbot3_Settings_Panel_Button")
         self.sysinfo_button.setText(" " + SysInfoPanel.name)
@@ -105,6 +115,9 @@ class MainWindow(QMainWindow):
         self.comms_panel = CommsPanel(self)
         self.stacked_widget.insertWidget(COMMS_PANEL_INDEX, self.comms_panel)
 
+        self.services_panel = ServicesPanel(self)
+        self.stacked_widget.insertWidget(SERVICES_PANEL_INDEX, self.services_panel)
+
         self.update_icons()
         self.stacked_widget.setCurrentIndex(settings["settings"]["page"])
         self.show()
@@ -121,6 +134,7 @@ class MainWindow(QMainWindow):
         self.theme_button.setIcon(QIcon(qta.icon("fa5s.paint-roller", color=self.fg_color)))
         self.sysinfo_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.fg_color)))
         self.comms_button.setIcon(QIcon(qta.icon("mdi.transit-connection-variant", color=self.fg_color)))
+        self.services_button.setIcon(QIcon(qta.icon("mdi.cogs", color=self.fg_color)))
 
     def set_page(self, page: int):
         self.stacked_widget.setCurrentIndex(page)

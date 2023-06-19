@@ -265,3 +265,73 @@ class CommsPanel(QScrollArea):
     def update_xbee_port(port: str):
         settings["services"]["serial"]["xb-port"] = port
         save_json()
+
+
+class ServicesPanel(QScrollArea):
+    name = "Services"
+
+    def __init__(self, parent):
+        super().__init__()
+
+        self.setObjectName("Kevinbot3_SettingsPanel_Panel")
+        self.setWidgetResizable(True)
+
+        self.widget = QWidget()
+        self.setWidget(self.widget)
+
+        self.root_layout = QVBoxLayout()
+        self.widget.setLayout(self.root_layout)
+
+        self.label = QLabel(self.name)
+        self.label.setStyleSheet("font-weight: bold;")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.root_layout.addWidget(self.label)
+
+        self.layout = QVBoxLayout()
+        self.root_layout.addLayout(self.layout)
+
+        self.toolbox = QToolBox()
+        self.layout.addWidget(self.toolbox)
+
+        self.com_item = QWidget()
+        self.com_layout = QVBoxLayout()
+        self.com_item.setLayout(self.com_layout)
+
+        self.b1_layout = QHBoxLayout()
+        self.com_layout.addLayout(self.b1_layout)
+
+        self.b1_label = QLabel("Battery #1 MQTT Topic")
+        self.b1_layout.addWidget(self.b1_label)
+
+        self.b1_edit = QLineEdit()
+        self.b1_edit.setMaximumWidth(180)
+        self.b1_edit.setText(str(settings["services"]["com"]["topic-batt1"]))
+        self.b1_edit.textChanged.connect(self.update_b1)
+        self.b1_layout.addWidget(self.b1_edit)
+
+        self.b2_layout = QHBoxLayout()
+        self.com_layout.addLayout(self.b2_layout)
+
+        self.b2_label = QLabel("Battery #2 MQTT Topic")
+        self.b2_layout.addWidget(self.b2_label)
+
+        self.b2_edit = QLineEdit()
+        self.b2_edit.setMaximumWidth(180)
+        self.b2_edit.setText(str(settings["services"]["com"]["topic-batt2"]))
+        self.b2_edit.textChanged.connect(self.update_b2)
+        self.b2_layout.addWidget(self.b2_edit)
+
+        self.toolbox.addItem(self.com_item, "Communication Service")
+
+        self.restart_warning = QLabel("A restart is required for these settings to update")
+        self.layout.addWidget(self.restart_warning)
+
+    @staticmethod
+    def update_b1(topic: str):
+        settings["services"]["com"]["topic-batt1"] = topic
+        save_json()
+
+    @staticmethod
+    def update_b2(topic: str):
+        settings["services"]["com"]["topic-batt2"] = topic
+        save_json()
