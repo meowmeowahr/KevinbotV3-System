@@ -359,6 +359,17 @@ class ServicesPanel(QScrollArea):
 
         self.toolbox.addItem(self.com_item, "Communication Service")
 
+        self.mpu_item = QWidget()
+        self.mpu_layout = QVBoxLayout()
+        self.mpu_item.setLayout(self.mpu_layout)
+
+        self.mpu_enable = QCheckBox("Enable")
+        self.mpu_enable.setChecked(settings["services"]["mpu"]["enabled"])
+        self.mpu_enable.stateChanged.connect(self.update_mpu_ena)
+        self.mpu_layout.addWidget(self.mpu_enable)
+
+        self.toolbox.addItem(self.mpu_item, "MPU9250 Service")
+
         self.restart_warning = QLabel("A restart is required for these settings to update")
         self.layout.addWidget(self.restart_warning)
 
@@ -385,4 +396,9 @@ class ServicesPanel(QScrollArea):
     @staticmethod
     def update_tick(value: str):
         settings["services"]["com"]["tick"] = value
+        save_json()
+
+    @staticmethod
+    def update_mpu_ena(value: str):
+        settings["services"]["mpu"]["enabled"] = bool(value)
         save_json()
