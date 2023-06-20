@@ -333,6 +333,18 @@ class ServicesPanel(QScrollArea):
         self.uptime_os_edit.textChanged.connect(self.update_uptime_os)
         self.uptime_os_layout.addWidget(self.uptime_os_edit)
 
+        self.uptime_core_layout = QHBoxLayout()
+        self.com_layout.addLayout(self.uptime_core_layout)
+
+        self.uptime_core_label = QLabel("Core Uptime MQTT Topic")
+        self.uptime_core_layout.addWidget(self.uptime_core_label)
+
+        self.uptime_core_edit = QLineEdit()
+        self.uptime_core_edit.setMaximumWidth(180)
+        self.uptime_core_edit.setText(str(settings["services"]["com"]["topic-core-uptime"]))
+        self.uptime_core_edit.textChanged.connect(self.update_uptime_core)
+        self.uptime_core_layout.addWidget(self.uptime_core_edit)
+
         self.toolbox.addItem(self.com_item, "Communication Service")
 
         self.restart_warning = QLabel("A restart is required for these settings to update")
@@ -351,4 +363,9 @@ class ServicesPanel(QScrollArea):
     @staticmethod
     def update_uptime_os(topic: str):
         settings["services"]["com"]["topic-sys-uptime"] = topic
+        save_json()
+
+    @staticmethod
+    def update_uptime_core(topic: str):
+        settings["services"]["com"]["topic-core-uptime"] = topic
         save_json()
