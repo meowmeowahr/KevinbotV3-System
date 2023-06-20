@@ -368,6 +368,21 @@ class ServicesPanel(QScrollArea):
         self.mpu_enable.stateChanged.connect(self.update_mpu_ena)
         self.mpu_layout.addWidget(self.mpu_enable)
 
+        self.mpu_addr_layout = QHBoxLayout()
+        self.mpu_layout.addLayout(self.mpu_addr_layout)
+
+        self.mpu_addr_label = QLabel("Address")
+        self.mpu_addr_layout.addWidget(self.mpu_addr_label)
+
+        self.mpu_addr_spin = QSpinBox()
+        self.mpu_addr_spin.setDisplayIntegerBase(16)
+        self.mpu_addr_spin.setPrefix("0x")
+        self.mpu_addr_spin.setRange(0x00, 0x7f)
+        self.mpu_addr_spin.setAccelerated(True)
+        self.mpu_addr_spin.setValue(settings["services"]["mpu"]["address"])
+        self.mpu_addr_spin.valueChanged.connect(self.update_mpu_addr)
+        self.mpu_addr_layout.addWidget(self.mpu_addr_spin)
+
         self.toolbox.addItem(self.mpu_item, "MPU9250 Service")
 
         self.restart_warning = QLabel("A restart is required for these settings to update")
@@ -401,4 +416,9 @@ class ServicesPanel(QScrollArea):
     @staticmethod
     def update_mpu_ena(value: str):
         settings["services"]["mpu"]["enabled"] = bool(value)
+        save_json()
+
+    @staticmethod
+    def update_mpu_addr(value: str):
+        settings["services"]["mpu"]["address"] = value
         save_json()

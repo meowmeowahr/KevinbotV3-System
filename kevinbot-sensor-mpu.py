@@ -67,7 +67,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=settings["logging"]["level"])
     if settings["services"]["mpu"]["enabled"]:
         bus = smbus.SMBus(1)
-        imu = MPU9250.MPU9250(bus, int(str(settings["services"]["mpu"]["address"]), 16))
+        imu = MPU9250.MPU9250(bus, int(settings["services"]["mpu"]["address"]))
         imu.begin()
         loop()
     else:

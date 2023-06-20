@@ -3,7 +3,7 @@
         "interval": 2
     },
     "settings": {
-        "page": 2
+        "page": 4
     },
     "logging": {
         "level": 10
@@ -51,7 +51,7 @@
         },
         "mpu": {
             "enabled": true,
-            "address": 68,
+            "address": 104,
             "update-speed": 0.1,
             "topic-roll": "kevinbot/mpu/roll",
             "topic-pitch": "kevinbot/mpu/pitch",
