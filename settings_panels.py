@@ -345,6 +345,18 @@ class ServicesPanel(QScrollArea):
         self.uptime_core_edit.textChanged.connect(self.update_uptime_core)
         self.uptime_core_layout.addWidget(self.uptime_core_edit)
 
+        self.tick_layout = QHBoxLayout()
+        self.com_layout.addLayout(self.tick_layout)
+
+        self.tick_label = QLabel("Tick Speed")
+        self.tick_layout.addWidget(self.tick_label)
+
+        self.tick_combo = QComboBox()
+        self.tick_combo.addItems(map(str, settings["constants"]["ticks"]))
+        self.tick_combo.setCurrentText(str(settings["services"]["com"]["tick"]))
+        self.tick_combo.currentTextChanged.connect(self.update_tick)
+        self.tick_layout.addWidget(self.tick_combo)
+
         self.toolbox.addItem(self.com_item, "Communication Service")
 
         self.restart_warning = QLabel("A restart is required for these settings to update")
@@ -368,4 +380,9 @@ class ServicesPanel(QScrollArea):
     @staticmethod
     def update_uptime_core(topic: str):
         settings["services"]["com"]["topic-core-uptime"] = topic
+        save_json()
+
+    @staticmethod
+    def update_tick(value: str):
+        settings["services"]["com"]["tick"] = value
         save_json()

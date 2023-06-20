@@ -2,6 +2,7 @@ from typing import Dict, Any, Final, List
 
 import datetime
 import os
+import time
 import subprocess
 import threading
 import logging
@@ -120,16 +121,17 @@ def recv_loop():
                 logging.info(f"Enabled: {enabled}")
             if line[0] == "alive":
                 # System Tick
-                tick(int(line[1]))
+                publish(settings["services"]["com"]["topic-core-uptime"], line[1])
+                if settings["services"]["com"]["tick"].lower() == "core":
+                    tick()
         except (IndexError, ValueError):
             # data is corrupt
             pass
 
 
-def tick(tick):
+def tick():
     data_to_remote(f"os_uptime={round(get_uptime())}")
     publish(settings["services"]["com"]["topic-sys-uptime"], get_uptime())
-    publish(settings["services"]["com"]["topic-core-uptime"], tick)
 
 
 def remote_recv_loop():
@@ -237,6 +239,15 @@ def publish(topic, msg):
         logging.error(f"Failed to send message to topic {topic}")
 
 
+def tick_loop():
+    if settings["services"]["com"]["tick"].lower() == "core":
+        return
+
+    while True:
+        time.sleep(float(settings["services"]["com"]["tick"].lower().strip("s")))
+        tick()
+
+
 if __name__ == "__main__":
     # banner
     try:
@@ -263,11 +274,14 @@ if __name__ == "__main__":
     # threads
     client = None
 
-    recv_thread = threading.Thread(target=recv_loop)
+    recv_thread = threading.Thread(target=recv_loop, daemon=True)
     recv_thread.start()
 
     remote_recv_thread = threading.Thread(target=remote_recv_loop, daemon=True)
     remote_recv_thread.start()
+
+    tick_thread = threading.Thread(target=tick_loop, daemon=True)
+    tick_thread.start()
 
     # mqtt
     client = mqtt_client.Client(CLI_ID)
