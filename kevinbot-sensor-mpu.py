@@ -27,10 +27,6 @@ TOPIC_PITCH = settings["services"]["mpu"]["topic-pitch"]
 TOPIC_YAW = settings["services"]["mpu"]["topic-yaw"]
 CLI_ID = f'kevinbot-mpu-{uuid.uuid4()}'
 
-bus = smbus.SMBus(1)
-imu = MPU9250.MPU9250(bus, int(str(settings["services"]["mpu"]["address"]), 16))
-imu.begin()
-
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -68,7 +64,11 @@ def loop():
 
 
 if __name__ == "__main__":
-    # logging
     logging.basicConfig(level=settings["logging"]["level"])
-
-    loop()
+    if settings["services"]["mpu"]["enabled"]:
+        bus = smbus.SMBus(1)
+        imu = MPU9250.MPU9250(bus, int(str(settings["services"]["mpu"]["address"]), 16))
+        imu.begin()
+        loop()
+    else:
+        logging.warning("MPU Service is not enabled, exiting")

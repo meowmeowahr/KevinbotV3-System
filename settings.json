@@ -50,6 +50,7 @@
             "topic-core-uptime": "kevinbot/uptimes/core"
         },
         "mpu": {
+            "enabled": true,
             "address": 68,
             "update-speed": 0.1,
             "topic-roll": "kevinbot/mpu/roll",
