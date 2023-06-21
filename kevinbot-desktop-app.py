@@ -20,7 +20,8 @@ settings = json.load(open(SETTINGS_PATH, 'r'))
 WIDGET_TYPES = {
     "base": desktop_base_widget.BaseWidget,
     "clock": desktop_base_widget.ClockWidget,
-    "clock24": desktop_base_widget.Clock24Widget}
+    "clock24": desktop_base_widget.Clock24Widget,
+    "enable": desktop_base_widget.EnaWidget}
 
 
 def save_json():
@@ -76,8 +77,7 @@ class DockWindow(QMainWindow):
         self.root_layout.addStretch()
 
         for item in settings["order"]:
-            widget = WIDGET_TYPES[item["type"]]()
-            widget.setData(item)
+            widget = WIDGET_TYPES[item["type"]](data=item)
             widget.up_button.clicked.connect(functools.partial(self.move_widget_up, widget))
             widget.down_button.clicked.connect(functools.partial(self.move_widget_down, widget))
             widget.remove_button.clicked.connect(functools.partial(self.widget_del, widget))
@@ -175,6 +175,10 @@ class AddWindow(QDialog):
         self.add_clock24_widget = desktop_base_widget.Clock24Widget(add=True)
         self.add_clock24_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.Clock24Widget()))
         self.scroll_layout.addWidget(self.add_clock24_widget)
+
+        self.add_enable_status_widget = desktop_base_widget.EnaWidget(add=True)
+        self.add_enable_status_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.EnaWidget()))
+        self.scroll_layout.addWidget(self.add_enable_status_widget)
 
         self.show()
 

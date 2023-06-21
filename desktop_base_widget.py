@@ -3,17 +3,52 @@ from PyQt5.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
 from PyQt5.QtCore import Qt, QSize, QTimer
 import qtawesome as qta
 
+from paho.mqtt import client as mqtt_client
+
 from KevinbotUI import KBTheme
 import theme_control
 
+import os
 import uuid
+import json
 import datetime
+import threading
+
+
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
+
+settings = json.load(open(SETTINGS_PATH, 'r'))
+
+BROKER = settings["services"]["mqtt"]["address"]
+PORT = settings["services"]["mqtt"]["port"]
+CLI_ID = f'kevinbot-widgets-{uuid.uuid4()}'
+
+def on_mqtt_message(client, userdata, msg):
+    if settings["services"]["com"]["topic-enabled"] in msg.topic:
+        _SystemStates.enabled = msg.payload.decode().lower() == "true"
+
+def mqtt_loop():
+    # mqtt
+    client = mqtt_client.Client(CLI_ID)
+    client.on_message = on_mqtt_message
+    client.connect(BROKER, PORT)
+    client.subscribe(settings["services"]["com"]["topic-enabled"])
+    
+    client.loop_forever()
+
+mqtt_thread = threading.Thread(target=mqtt_loop, daemon=True)
+mqtt_thread.start()
+
+
+class _SystemStates:
+    enabled = False
 
 
 class BaseWidget(QFrame):
-    def __init__(self, add=False):
+    def __init__(self, add=False, data={"type": "base", "uuid": str(uuid.uuid4())}):
         super().__init__()
-        self.data = {"type": "base", "uuid": str(uuid.uuid4())}
+        self.data = data
         self.add = add
 
         self.ensurePolished()
@@ -146,6 +181,50 @@ class Clock24Widget(BaseWidget):
     def update_time(self):
         self.time.setText(datetime.datetime.now().strftime("%H:%M:%S").upper())
         self.date.setText(datetime.datetime.now().strftime("%d, %b %Y").upper())
+
+class EnaWidget(BaseWidget):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.data["type"] = "enable"
+        self.setTitle("Enabled Status")
+
+        if "speed" not in self.data:
+            self.data["speed"] = 400
+
+        self.light_on = False
+
+        self.setFixedHeight(180)
+
+        self.layout = QVBoxLayout()
+        self.addLayout(self.layout)
+
+        self.pulser = QFrame()
+        self.pulser.setFixedHeight(64)
+        self.pulser.setStyleSheet("background-color: #4CAF50;")
+        self.layout.addWidget(self.pulser)
+
+        self.text = QLabel("Disabled")
+        self.text.setStyleSheet("font-size: 32px; font-weight: bold")
+        self.text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.text)
+
+        if not self.add:
+            self.timer = QTimer()
+            self.timer.setInterval(self.data["speed"])
+            self.timer.timeout.connect(self.pulse)
+            self.timer.start()
+
+    def pulse(self):
+        if _SystemStates.enabled:
+            self.text.setText("Enabled")
+            self.light_on = not self.light_on
+            if self.light_on:
+                self.pulser.setStyleSheet("background-color: #E53935;")
+            else:
+                self.pulser.setStyleSheet("background-color: #212121;")
+        else:
+            self.text.setText("Disabled")
+            self.pulser.setStyleSheet("background-color: #4CAF50;")
 
 class EmptyWidget(QFrame):
     def __init__(self):

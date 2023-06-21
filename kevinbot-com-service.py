@@ -132,6 +132,7 @@ def recv_loop():
 def tick():
     data_to_remote(f"os_uptime={round(get_uptime())}")
     publish(settings["services"]["com"]["topic-sys-uptime"], get_uptime())
+    publish(settings["services"]["com"]["topic-enabled"], enabled)
 
 
 def remote_recv_loop():

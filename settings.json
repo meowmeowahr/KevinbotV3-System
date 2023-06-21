@@ -47,7 +47,8 @@
             "topic-batt1": "kevinbot/battery/batt1",
             "topic-batt2": "kevinbot/battery/batt2",
             "topic-sys-uptime": "kevinbot/uptimes/os",
-            "topic-core-uptime": "kevinbot/uptimes/core"
+            "topic-core-uptime": "kevinbot/uptimes/core",
+            "topic-enabled": "kevinbot/enabled"
         },
         "mpu": {
             "enabled": true,

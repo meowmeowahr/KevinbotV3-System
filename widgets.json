@@ -1,6 +1,11 @@
 {
     "order": [
         {
+            "type": "enable",
+            "uuid": "fdcd54e4-d06e-4abe-a011-9877a79bf654",
+            "speed": 500
+        },
+        {
             "type": "clock",
             "uuid": "b84c0e2d-62cd-4ba9-b1e6-444d1ff0618a"
         }
