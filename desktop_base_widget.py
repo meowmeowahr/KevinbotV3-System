@@ -80,8 +80,12 @@ class BaseWidget(QFrame):
 class ClockWidget(BaseWidget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.setTitle("Clock")
         self.data["type"] = "clock"
+
+        if self.add:
+            self.setTitle("12-Hour Clock")
+        else:
+            self.setTitle("Clock")
 
         self.setFixedHeight(200)
 
@@ -106,6 +110,41 @@ class ClockWidget(BaseWidget):
 
     def update_time(self):
         self.time.setText(datetime.datetime.now().strftime("%I:%M %p").upper())
+        self.date.setText(datetime.datetime.now().strftime("%d, %b %Y").upper())
+
+class Clock24Widget(BaseWidget):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.data["type"] = "clock24"
+
+        if self.add:
+            self.setTitle("24-Hour Clock")
+        else:
+            self.setTitle("Clock")
+
+        self.setFixedHeight(200)
+
+        self.layout = QVBoxLayout()
+        self.addLayout(self.layout)
+
+        self.time = QLabel("??:??:??")
+        self.time.setStyleSheet("font-size: 48px;")
+        self.time.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.time)
+
+        self.date = QLabel("??????")
+        self.date.setStyleSheet("font-size: 24px;")
+        self.date.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.date)
+
+        if not self.add:
+            self.timer = QTimer()
+            self.timer.setInterval(500)
+            self.timer.timeout.connect(self.update_time)
+            self.timer.start()
+
+    def update_time(self):
+        self.time.setText(datetime.datetime.now().strftime("%H:%M:%S").upper())
         self.date.setText(datetime.datetime.now().strftime("%d, %b %Y").upper())
 
 class EmptyWidget(QFrame):

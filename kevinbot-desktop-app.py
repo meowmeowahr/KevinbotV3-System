@@ -20,7 +20,7 @@ settings = json.load(open(SETTINGS_PATH, 'r'))
 WIDGET_TYPES = {
     "base": desktop_base_widget.BaseWidget,
     "clock": desktop_base_widget.ClockWidget,
-                }
+    "clock24": desktop_base_widget.Clock24Widget}
 
 
 def save_json():
@@ -171,6 +171,10 @@ class AddWindow(QDialog):
         self.add_clock_widget = desktop_base_widget.ClockWidget(add=True)
         self.add_clock_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.ClockWidget()))
         self.scroll_layout.addWidget(self.add_clock_widget)
+
+        self.add_clock24_widget = desktop_base_widget.Clock24Widget(add=True)
+        self.add_clock24_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.Clock24Widget()))
+        self.scroll_layout.addWidget(self.add_clock24_widget)
 
         self.show()
 
