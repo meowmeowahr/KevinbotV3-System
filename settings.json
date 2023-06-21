@@ -43,7 +43,7 @@
             "xb-port": "/dev/ttyS0"
         },
         "com": {
-            "tick": "CORE",
+            "tick": "1s",
             "topic-batt1": "kevinbot/battery/batt1",
             "topic-batt2": "kevinbot/battery/batt2",
             "topic-sys-uptime": "kevinbot/uptimes/os",
