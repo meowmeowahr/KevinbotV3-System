@@ -165,10 +165,6 @@ class AddWindow(QDialog):
         self.scroll_layout = QVBoxLayout()
         self.scroll_widget.setLayout(self.scroll_layout)
 
-        self.add_base_widget = desktop_base_widget.BaseWidget(add=True)
-        self.add_base_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.BaseWidget()))
-        self.scroll_layout.addWidget(self.add_base_widget)
-
         self.add_clock_widget = desktop_base_widget.ClockWidget(add=True)
         self.add_clock_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.ClockWidget()))
         self.scroll_layout.addWidget(self.add_clock_widget)
