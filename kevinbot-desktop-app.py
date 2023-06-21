@@ -4,7 +4,7 @@ import json
 import functools
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QDialog, QWidget,
-                             QVBoxLayout, QPushButton, QLabel, QScrollArea)
+                             QVBoxLayout, QLabel, QScrollArea)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QMoveEvent
 
@@ -70,7 +70,6 @@ class DockWindow(QMainWindow):
         self.main_layout = QVBoxLayout()
         self.root_layout.addLayout(self.main_layout)
 
-
         self.extras_layout = QVBoxLayout()
         self.root_layout.addLayout(self.extras_layout)
 
@@ -78,15 +77,17 @@ class DockWindow(QMainWindow):
 
         for item in settings["order"]:
             widget = WIDGET_TYPES[item["type"]](data=item)
-            widget.up_button.clicked.connect(functools.partial(self.move_widget_up, widget))
-            widget.down_button.clicked.connect(functools.partial(self.move_widget_down, widget))
-            widget.remove_button.clicked.connect(functools.partial(self.widget_del, widget))
+            widget.up_button.clicked.connect(
+                functools.partial(self.move_widget_up, widget))
+            widget.down_button.clicked.connect(
+                functools.partial(self.move_widget_down, widget))
+            widget.remove_button.clicked.connect(
+                functools.partial(self.widget_del, widget))
             self.main_layout.addWidget(widget)
 
         self.empty_widget = desktop_base_widget.EmptyWidget()
         self.empty_widget.setVisible(self.main_layout.count() == 0)
         self.extras_layout.addWidget(self.empty_widget)
-
 
         self.reposition()
         self.show()
@@ -116,7 +117,7 @@ class DockWindow(QMainWindow):
     def widget_del(self, w):
         if self.main_layout.count() == 1:
             self.empty_widget.setVisible(True)
-        
+
         self.main_layout.removeWidget(w)
         w.deleteLater()
         reload_settings()
@@ -177,15 +178,19 @@ class AddWindow(QDialog):
         self.scroll_layout.addWidget(self.add_clock24_widget)
 
         self.add_enable_status_widget = desktop_base_widget.EnaWidget(add=True)
-        self.add_enable_status_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.EnaWidget()))
+        self.add_enable_status_widget.add_button.clicked.connect(lambda:
+                                                                 self.add_widget(desktop_base_widget.EnaWidget()))
         self.scroll_layout.addWidget(self.add_enable_status_widget)
 
         self.show()
 
     def add_widget(self, widget: QWidget):
-        widget.up_button.clicked.connect(functools.partial(dock.move_widget_up, widget))
-        widget.down_button.clicked.connect(functools.partial(dock.move_widget_down, widget))
-        widget.remove_button.clicked.connect(functools.partial(dock.widget_del, widget))
+        widget.up_button.clicked.connect(
+            functools.partial(dock.move_widget_up, widget))
+        widget.down_button.clicked.connect(
+            functools.partial(dock.move_widget_down, widget))
+        widget.remove_button.clicked.connect(
+            functools.partial(dock.widget_del, widget))
         dock.main_layout.addWidget(widget)
         dock.empty_widget.setVisible(False)
         reload_settings()

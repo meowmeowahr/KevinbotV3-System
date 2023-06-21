@@ -24,9 +24,11 @@ BROKER = settings["services"]["mqtt"]["address"]
 PORT = settings["services"]["mqtt"]["port"]
 CLI_ID = f'kevinbot-widgets-{uuid.uuid4()}'
 
+
 def on_mqtt_message(client, userdata, msg):
     if settings["services"]["com"]["topic-enabled"] in msg.topic:
         _SystemStates.enabled = msg.payload.decode().lower() == "true"
+
 
 def mqtt_loop():
     # mqtt
@@ -34,8 +36,9 @@ def mqtt_loop():
     client.on_message = on_mqtt_message
     client.connect(BROKER, PORT)
     client.subscribe(settings["services"]["com"]["topic-enabled"])
-    
+
     client.loop_forever()
+
 
 mqtt_thread = threading.Thread(target=mqtt_loop, daemon=True)
 mqtt_thread.start()
@@ -46,7 +49,8 @@ class _SystemStates:
 
 
 class BaseWidget(QFrame):
-    def __init__(self, add=False, data={"type": "base", "uuid": str(uuid.uuid4())}):
+    def __init__(self, add=False,
+                 data={"type": "base", "uuid": str(uuid.uuid4())}):
         super().__init__()
         self.data = data
         self.add = add
@@ -145,7 +149,9 @@ class ClockWidget(BaseWidget):
 
     def update_time(self):
         self.time.setText(datetime.datetime.now().strftime("%I:%M %p").upper())
-        self.date.setText(datetime.datetime.now().strftime("%d, %b %Y").upper())
+        self.date.setText(datetime.datetime.now()
+                          .strftime("%d, %b %Y").upper())
+
 
 class Clock24Widget(BaseWidget):
     def __init__(self, **kwargs):
@@ -180,13 +186,15 @@ class Clock24Widget(BaseWidget):
 
     def update_time(self):
         self.time.setText(datetime.datetime.now().strftime("%H:%M:%S").upper())
-        self.date.setText(datetime.datetime.now().strftime("%d, %b %Y").upper())
+        self.date.setText(datetime.datetime.now()
+                          .strftime("%d, %b %Y").upper())
+
 
 class EnaWidget(BaseWidget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.data["type"] = "enable"
-        self.setTitle("Enabled Status")
+        self.setTitle("Robot Status")
 
         if "speed" not in self.data:
             self.data["speed"] = 400
@@ -225,6 +233,7 @@ class EnaWidget(BaseWidget):
         else:
             self.text.setText("Disabled")
             self.pulser.setStyleSheet("background-color: #4CAF50;")
+
 
 class EmptyWidget(QFrame):
     def __init__(self):
