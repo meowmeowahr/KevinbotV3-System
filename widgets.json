@@ -6,6 +6,13 @@
             "speed": 500
         },
         {
+            "type": "batt",
+            "uuid": "2e17b20b-d677-4a12-ac3a-b2a01d55b989",
+            "speed": 400,
+            "update": 2000,
+            "b2": true
+        },
+        {
             "type": "clock",
             "uuid": "b84c0e2d-62cd-4ba9-b1e6-444d1ff0618a"
         }

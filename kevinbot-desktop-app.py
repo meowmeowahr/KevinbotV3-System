@@ -21,7 +21,9 @@ WIDGET_TYPES = {
     "base": desktop_base_widget.BaseWidget,
     "clock": desktop_base_widget.ClockWidget,
     "clock24": desktop_base_widget.Clock24Widget,
-    "enable": desktop_base_widget.EnaWidget}
+    "enable": desktop_base_widget.EnaWidget,
+    "batt": desktop_base_widget.BattWidget
+    }
 
 
 def save_json():
@@ -177,6 +179,11 @@ class AddWindow(QDialog):
         self.add_enable_status_widget.add_button.clicked.connect(lambda:
                                                                  self.add_widget(desktop_base_widget.EnaWidget()))
         self.scroll_layout.addWidget(self.add_enable_status_widget)
+
+        self.add_batt_status_widget = desktop_base_widget.BattWidget(add=True)
+        self.add_batt_status_widget.add_button.clicked.connect(lambda:
+                                                                 self.add_widget(desktop_base_widget.BattWidget()))
+        self.scroll_layout.addWidget(self.add_batt_status_widget)
 
         self.show()
 

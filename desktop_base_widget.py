@@ -28,6 +28,10 @@ CLI_ID = f'kevinbot-widgets-{uuid.uuid4()}'
 def on_mqtt_message(client, userdata, msg):
     if settings["services"]["com"]["topic-enabled"] in msg.topic:
         _SystemStates.enabled = msg.payload.decode().lower() == "true"
+    elif settings["services"]["com"]["topic-batt1"] in msg.topic:
+        _SystemStates.batt1_voltage = float(msg.payload.decode())
+    elif settings["services"]["com"]["topic-batt2"] in msg.topic:
+        _SystemStates.batt2_voltage = float(msg.payload.decode())
 
 
 def mqtt_loop():
@@ -36,7 +40,8 @@ def mqtt_loop():
     client.on_message = on_mqtt_message
     client.connect(BROKER, PORT)
     client.subscribe(settings["services"]["com"]["topic-enabled"])
-
+    client.subscribe(settings["services"]["com"]["topic-batt1"])
+    client.subscribe(settings["services"]["com"]["topic-batt2"])
     client.loop_forever()
 
 
@@ -46,6 +51,8 @@ mqtt_thread.start()
 
 class _SystemStates:
     enabled = False
+    batt1_voltage = 0
+    batt2_voltage = 0
 
 
 class BaseWidget(QFrame):
@@ -233,6 +240,48 @@ class EnaWidget(BaseWidget):
         else:
             self.text.setText("Disabled")
             self.pulser.setStyleSheet("background-color: #4CAF50;")
+
+
+class BattWidget(BaseWidget):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.data["type"] = "batt"
+        self.setTitle("Battery Status")
+
+        if "update" not in self.data:
+            self.data["update"] = 2000
+        if "b2" not in self.data:
+            self.data["b2"] = True
+
+        self.light_on = False
+
+        self.setFixedHeight(120)
+
+        self.layout = QVBoxLayout()
+        self.addLayout(self.layout)
+
+        if self.data["b2"]:
+            self.b1 = QLabel("Battery #1 Voltage: ??")
+            self.layout.addWidget(self.b1)
+
+            self.b2 = QLabel("Battery #2 Voltage: ??")
+            self.layout.addWidget(self.b2)
+        else:
+            self.b1 = QLabel("Battery Voltage: ??")
+            self.layout.addWidget(self.b1)
+
+        if not self.add:
+            self.timer = QTimer()
+            self.timer.setInterval(self.data["update"])
+            self.timer.timeout.connect(self.update_voltage)
+            self.timer.start()
+
+    def update_voltage(self):
+        if self.data["b2"]:
+            self.b1.setText(f"Battery #1 Voltage: <b>{_SystemStates.batt1_voltage}v</b>")
+            self.b2.setText(f"Battery #2 Voltage: <b>{_SystemStates.batt2_voltage}v</b>")
+        else:
+            self.b1.setText(f"Battery Voltage: <b>{_SystemStates.batt1_voltage}v</b>")
 
 
 class EmptyWidget(QFrame):
