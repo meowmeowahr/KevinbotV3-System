@@ -17,6 +17,11 @@ SETTINGS_PATH = os.path.join(CURRENT_DIR, 'widgets.json')
 
 settings = json.load(open(SETTINGS_PATH, 'r'))
 
+WIDGET_TYPES = {
+    "base": desktop_base_widget.BaseWidget,
+    "clock": desktop_base_widget.ClockWidget,
+                }
+
 
 def save_json():
     with open(SETTINGS_PATH, 'w') as f:
@@ -71,13 +76,12 @@ class DockWindow(QMainWindow):
         self.root_layout.addStretch()
 
         for item in settings["order"]:
-            if item["type"] == "base":
-                widget = desktop_base_widget.BaseWidget()
-                widget.setData(item)
-                widget.up_button.clicked.connect(functools.partial(self.move_widget_up, widget))
-                widget.down_button.clicked.connect(functools.partial(self.move_widget_down, widget))
-                widget.remove_button.clicked.connect(functools.partial(self.widget_del, widget))
-                self.main_layout.addWidget(widget)
+            widget = WIDGET_TYPES[item["type"]]()
+            widget.setData(item)
+            widget.up_button.clicked.connect(functools.partial(self.move_widget_up, widget))
+            widget.down_button.clicked.connect(functools.partial(self.move_widget_down, widget))
+            widget.remove_button.clicked.connect(functools.partial(self.widget_del, widget))
+            self.main_layout.addWidget(widget)
 
         self.empty_widget = desktop_base_widget.EmptyWidget()
         self.empty_widget.setVisible(self.main_layout.count() == 0)
@@ -163,6 +167,10 @@ class AddWindow(QDialog):
         self.add_base_widget = desktop_base_widget.BaseWidget(add=True)
         self.add_base_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.BaseWidget()))
         self.scroll_layout.addWidget(self.add_base_widget)
+
+        self.add_clock_widget = desktop_base_widget.ClockWidget(add=True)
+        self.add_clock_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.ClockWidget()))
+        self.scroll_layout.addWidget(self.add_clock_widget)
 
         self.show()
 

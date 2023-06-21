@@ -1,18 +1,20 @@
 from PyQt5.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
-                             QLabel)
-from PyQt5.QtCore import Qt, QSize
+                             QLabel, QLayout)
+from PyQt5.QtCore import Qt, QSize, QTimer
 import qtawesome as qta
 
 from KevinbotUI import KBTheme
 import theme_control
 
 import uuid
+import datetime
 
 
 class BaseWidget(QFrame):
     def __init__(self, add=False):
         super().__init__()
         self.data = {"type": "base", "uuid": str(uuid.uuid4())}
+        self.add = add
 
         self.ensurePolished()
         if theme_control.get_dark():
@@ -70,6 +72,41 @@ class BaseWidget(QFrame):
     def setData(self, data: any):
         self.data = data
 
+    def addLayout(self, layout: QLayout):
+        self._root_layout.addLayout(layout)
+        self._root_layout.addStretch()
+
+
+class ClockWidget(BaseWidget):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.setTitle("Clock")
+        self.data["type"] = "clock"
+
+        self.setFixedHeight(200)
+
+        self.layout = QVBoxLayout()
+        self.addLayout(self.layout)
+
+        self.time = QLabel("??:?? ??")
+        self.time.setStyleSheet("font-size: 48px;")
+        self.time.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.time)
+
+        self.date = QLabel("??????")
+        self.date.setStyleSheet("font-size: 24px;")
+        self.date.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.date)
+
+        if not self.add:
+            self.timer = QTimer()
+            self.timer.setInterval(1000)
+            self.timer.timeout.connect(self.update_time)
+            self.timer.start()
+
+    def update_time(self):
+        self.time.setText(datetime.datetime.now().strftime("%I:%M %p").upper())
+        self.date.setText(datetime.datetime.now().strftime("%d, %b %Y").upper())
 
 class EmptyWidget(QFrame):
     def __init__(self):
