@@ -20,6 +20,12 @@ def save_json():
         json.dump(settings, f, indent=4)
 
 
+def detect_model() -> str:
+    with open('/proc/device-tree/model') as f:
+        model = f.read()
+    return model
+
+
 class _SysInfoItem(QWidget):
     def __init__(self, name, data):
         super().__init__()
@@ -143,6 +149,13 @@ class SysInfoPanel(QScrollArea):
 
         self.kernel = _SysInfoItem("Kernel Version", platform.release())
         self.layout.addWidget(self.kernel)
+
+        self.h_line = QFrame()
+        self.h_line.setFrameShape(QFrame.HLine)
+        self.layout.addWidget(self.h_line)
+
+        self.board = _SysInfoItem("Board", detect_model())
+        self.layout.addWidget(self.board)
 
         self.h_line = QFrame()
         self.h_line.setFrameShape(QFrame.HLine)
