@@ -278,10 +278,13 @@ class BattWidget(BaseWidget):
 
     def update_voltage(self):
         if self.data["b2"]:
-            self.b1.setText(f"Battery #1 Voltage: <b>{_SystemStates.batt1_voltage}v</b>")
-            self.b2.setText(f"Battery #2 Voltage: <b>{_SystemStates.batt2_voltage}v</b>")
+            self.b1.setText(f"Battery #1 Voltage: \
+                            <b>{_SystemStates.batt1_voltage}v</b>")
+            self.b2.setText(f"Battery #2 Voltage: \
+                            <b>{_SystemStates.batt2_voltage}v</b>")
         else:
-            self.b1.setText(f"Battery Voltage: <b>{_SystemStates.batt1_voltage}v</b>")
+            self.b1.setText(f"Battery Voltage: \
+                            <b>{_SystemStates.batt1_voltage}v</b>")
 
 
 class EmptyWidget(QFrame):

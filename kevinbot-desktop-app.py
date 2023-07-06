@@ -182,7 +182,7 @@ class AddWindow(QDialog):
 
         self.add_batt_status_widget = desktop_base_widget.BattWidget(add=True)
         self.add_batt_status_widget.add_button.clicked.connect(lambda:
-                                                                 self.add_widget(desktop_base_widget.BattWidget()))
+                                                               self.add_widget(desktop_base_widget.BattWidget()))
         self.scroll_layout.addWidget(self.add_batt_status_widget)
 
         self.show()
