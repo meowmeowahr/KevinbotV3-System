@@ -210,8 +210,6 @@ class CommsPanel(QScrollArea):
         self.core_baud_combo.currentTextChanged.connect(self.update_core_baud)
         self.core_baud_layout.addWidget(self.core_baud_combo)
 
-        # XBee
-
         self.xbee_baud_layout = QHBoxLayout()
         self.baud_layout.addLayout(self.xbee_baud_layout)
 
@@ -223,6 +221,18 @@ class CommsPanel(QScrollArea):
         self.xbee_baud_combo.setCurrentText(str(settings["services"]["serial"]["xb-baud"]))
         self.xbee_baud_combo.currentTextChanged.connect(self.update_xbee_baud)
         self.xbee_baud_layout.addWidget(self.xbee_baud_combo)
+
+        self.head_baud_layout = QHBoxLayout()
+        self.baud_layout.addLayout(self.head_baud_layout)
+
+        self.head_baud_label = QLabel("Head Baud")
+        self.head_baud_layout.addWidget(self.head_baud_label)
+
+        self.head_baud_combo = QComboBox()
+        self.head_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
+        self.head_baud_combo.setCurrentText(str(settings["services"]["serial"]["head-baud"]))
+        self.head_baud_combo.currentTextChanged.connect(self.update_head_baud)
+        self.head_baud_layout.addWidget(self.head_baud_combo)
 
         self.toolbox.addItem(self.baud_item, "Baud Rates")
 
@@ -254,6 +264,18 @@ class CommsPanel(QScrollArea):
         self.xbee_port_edit.textChanged.connect(self.update_xbee_port)
         self.xbee_port_layout.addWidget(self.xbee_port_edit)
 
+        self.head_port_layout = QHBoxLayout()
+        self.ports_layout.addLayout(self.head_port_layout)
+
+        self.head_port_label = QLabel("Head Port")
+        self.head_port_layout.addWidget(self.head_port_label)
+
+        self.head_port_edit = QLineEdit()
+        self.head_port_edit.setMaximumWidth(180)
+        self.head_port_edit.setText(str(settings["services"]["serial"]["head-port"]))
+        self.head_port_edit.textChanged.connect(self.update_head_port)
+        self.head_port_layout.addWidget(self.head_port_edit)
+
         self.toolbox.addItem(self.ports_item, "Serial Ports")
 
         self.restart_warning = QLabel("A restart is required for these settings to update")
@@ -270,6 +292,11 @@ class CommsPanel(QScrollArea):
         save_json()
 
     @staticmethod
+    def update_head_baud(baud: str):
+        settings["services"]["serial"]["head-baud"] = int(baud)
+        save_json()
+
+    @staticmethod
     def update_core_port(port: str):
         settings["services"]["serial"]["p2-port"] = port
         save_json()
@@ -277,6 +304,11 @@ class CommsPanel(QScrollArea):
     @staticmethod
     def update_xbee_port(port: str):
         settings["services"]["serial"]["xb-port"] = port
+        save_json()
+
+    @staticmethod
+    def update_head_port(port: str):
+        settings["services"]["serial"]["head-port"] = port
         save_json()
 
 

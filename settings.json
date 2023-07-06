@@ -3,7 +3,7 @@
         "interval": 2
     },
     "settings": {
-        "page": 4
+        "page": 3
     },
     "logging": {
         "level": 10
@@ -40,7 +40,9 @@
             "p2-baud": 230400,
             "p2-port": "/dev/ttyAMA1",
             "xb-baud": 460800,
-            "xb-port": "/dev/ttyS0"
+            "xb-port": "/dev/ttyS0",
+            "head-baud": 115200,
+            "head-port": "/dev/ttyUSB0"
         },
         "com": {
             "tick": "1s",
