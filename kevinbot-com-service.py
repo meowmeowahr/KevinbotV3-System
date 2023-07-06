@@ -30,6 +30,9 @@ XB_BAUD_RATE: Final = settings["services"]["serial"]["xb-baud"]
 P2_SERIAL_PORT: Final = settings["services"]["serial"]["p2-port"]
 P2_BAUD_RATE: Final = settings["services"]["serial"]["p2-baud"]
 
+HEAD_SERIAL_PORT: Final = settings["services"]["serial"]["head-port"]
+HEAD_BAUD_RATE: Final = settings["services"]["serial"]["head-baud"]
+
 BROKER: Final = settings["services"]["mqtt"]["address"]
 PORT: Final = settings["services"]["mqtt"]["port"]
 TOPIC_ROLL: Final = settings["services"]["mpu"]["topic-roll"]
@@ -129,6 +132,13 @@ def recv_loop():
             pass
 
 
+def head_recv_loop():
+    while True:
+        data = head_ser.readline().decode("UTF-8")
+        if data.startswith("eye_settings."):
+            data_to_remote(data)
+
+
 def tick():
     data_to_remote(f"os_uptime={round(get_uptime())}")
     publish(settings["services"]["com"]["topic-sys-uptime"], get_uptime())
@@ -147,11 +157,14 @@ def remote_recv_loop():
             if (not data['rf_data'].decode().startswith('core')) and enabled:
                 p2_ser.write(data['rf_data'])
 
+            raw = data['rf_data'].decode().strip("\r\n")
             data = data['rf_data'].decode().strip("\r\n").split('=', 1)
 
             print(data)
 
-            if data[0] == "core.speech":
+            if data[0].startswith("eye."):
+                head_ser.write((raw.split(".", maxsplit=1)[1] + "\n").encode("UTF-8"))
+            elif data[0] == "core.speech":
                 if speech_engine == "festival":
                     speak_festival(data[1].strip("\r\n"))
                 elif speech_engine == "espeak":
@@ -269,6 +282,8 @@ if __name__ == "__main__":
 
     p2_ser = serial.Serial(P2_SERIAL_PORT, baudrate=P2_BAUD_RATE)
 
+    head_ser = serial.Serial(HEAD_SERIAL_PORT, baudrate=HEAD_BAUD_RATE)
+
     # speech
     espeak_engine = pyttsx3.init("espeak")
 
@@ -277,6 +292,9 @@ if __name__ == "__main__":
 
     recv_thread = threading.Thread(target=recv_loop, daemon=True)
     recv_thread.start()
+
+    head_recv_thread = threading.Thread(target=head_recv_loop, daemon=True)
+    head_recv_thread.start()
 
     remote_recv_thread = threading.Thread(target=remote_recv_loop, daemon=True)
     remote_recv_thread.start()
