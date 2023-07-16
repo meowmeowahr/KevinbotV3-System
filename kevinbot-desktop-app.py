@@ -6,11 +6,11 @@ import functools
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QDialog, QWidget,
                              QVBoxLayout, QLabel, QScrollArea)
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QMoveEvent
+from PyQt5.QtGui import QMoveEvent, QCloseEvent
 
 from KevinbotUI import KBTheme
 import theme_control
-import desktop_base_widget
+import desktop_widgets
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'widgets.json')
@@ -18,12 +18,12 @@ SETTINGS_PATH = os.path.join(CURRENT_DIR, 'widgets.json')
 settings = json.load(open(SETTINGS_PATH, 'r'))
 
 WIDGET_TYPES = {
-    "base": desktop_base_widget.BaseWidget,
-    "clock": desktop_base_widget.ClockWidget,
-    "clock24": desktop_base_widget.Clock24Widget,
-    "enable": desktop_base_widget.EnaWidget,
-    "batt": desktop_base_widget.BattWidget
-    }
+    "base": desktop_widgets.BaseWidget,
+    "clock": desktop_widgets.ClockWidget,
+    "clock24": desktop_widgets.Clock24Widget,
+    "enable": desktop_widgets.EnaWidget,
+    "batt": desktop_widgets.BattWidget
+}
 
 
 def save_json():
@@ -62,7 +62,7 @@ class DockWindow(QMainWindow):
         self.root_layout = QVBoxLayout()
         self.widget.setLayout(self.root_layout)
 
-        self.add_button = desktop_base_widget.AddButton()
+        self.add_button = desktop_widgets.AddButton()
         self.add_button.setText("Add a Widget")
         self.add_button.clicked.connect(self.add_widget)
         self.root_layout.addWidget(self.add_button)
@@ -87,7 +87,7 @@ class DockWindow(QMainWindow):
                 functools.partial(self.widget_del, widget))
             self.main_layout.addWidget(widget)
 
-        self.empty_widget = desktop_base_widget.EmptyWidget()
+        self.empty_widget = desktop_widgets.EmptyWidget()
         self.empty_widget.setVisible(self.main_layout.count() == 0)
         self.extras_layout.addWidget(self.empty_widget)
 
@@ -132,6 +132,9 @@ class DockWindow(QMainWindow):
         self.reposition()
         a0.accept()
 
+    def closeEvent(self, a0: QCloseEvent) -> None:
+        a0.ignore()
+
     def reposition(self):
         self.setFixedHeight(self.screen.availableGeometry().height())
         self.move(self.screen.availableGeometry().width() - self.width(), 0)
@@ -167,22 +170,24 @@ class AddWindow(QDialog):
         self.scroll_layout = QVBoxLayout()
         self.scroll_widget.setLayout(self.scroll_layout)
 
-        self.add_clock_widget = desktop_base_widget.ClockWidget(add=True)
-        self.add_clock_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.ClockWidget()))
+        self.add_clock_widget = desktop_widgets.ClockWidget(add=True)
+        self.add_clock_widget.add_button.clicked.connect(
+            lambda: self.add_widget(desktop_widgets.ClockWidget()))
         self.scroll_layout.addWidget(self.add_clock_widget)
 
-        self.add_clock24_widget = desktop_base_widget.Clock24Widget(add=True)
-        self.add_clock24_widget.add_button.clicked.connect(lambda: self.add_widget(desktop_base_widget.Clock24Widget()))
+        self.add_clock24_widget = desktop_widgets.Clock24Widget(add=True)
+        self.add_clock24_widget.add_button.clicked.connect(
+            lambda: self.add_widget(desktop_widgets.Clock24Widget()))
         self.scroll_layout.addWidget(self.add_clock24_widget)
 
-        self.add_enable_status_widget = desktop_base_widget.EnaWidget(add=True)
-        self.add_enable_status_widget.add_button.clicked.connect(lambda:
-                                                                 self.add_widget(desktop_base_widget.EnaWidget()))
+        self.add_enable_status_widget = desktop_widgets.EnaWidget(add=True)
+        self.add_enable_status_widget.add_button.clicked.connect(
+            lambda: self.add_widget(desktop_widgets.EnaWidget()))
         self.scroll_layout.addWidget(self.add_enable_status_widget)
 
-        self.add_batt_status_widget = desktop_base_widget.BattWidget(add=True)
-        self.add_batt_status_widget.add_button.clicked.connect(lambda:
-                                                               self.add_widget(desktop_base_widget.BattWidget()))
+        self.add_batt_status_widget = desktop_widgets.BattWidget(add=True)
+        self.add_batt_status_widget.add_button.clicked.connect(
+            lambda: self.add_widget(desktop_widgets.BattWidget()))
         self.scroll_layout.addWidget(self.add_batt_status_widget)
 
         self.show()

@@ -1,6 +1,17 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from PyQt5.QtWidgets import (
+    QWidget,
+    QLabel,
+    QVBoxLayout,
+    QHBoxLayout,
+    QFrame,
+    QScrollArea,
+    QToolBox,
+    QCheckBox,
+    QLineEdit,
+    QComboBox,
+    QSpinBox)
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QPalette, QColor, QPixmap
 from KevinbotUI import SwitchControl
 import theme_control
 import socket
@@ -44,9 +55,9 @@ class _SysInfoItem(QWidget):
 
 
 class ThemePanel(QWidget):
-    
+
     name = "Theme"
-    
+
     def __init__(self, parent):
         super().__init__()
 
@@ -74,9 +85,12 @@ class ThemePanel(QWidget):
 
         self.ensurePolished()
         self.theme_select_switch = SwitchControl()
-        self.theme_select_switch.set_active_color(QColor(self.palette().color(QPalette.Highlight)))
-        self.theme_select_switch.set_bg_color(QColor(self.palette().color(QPalette.ColorRole.Dark)))
-        self.theme_select_switch.stateChanged.connect(self.theme_select_changed)
+        self.theme_select_switch.set_active_color(
+            QColor(self.palette().color(QPalette.Highlight)))
+        self.theme_select_switch.set_bg_color(
+            QColor(self.palette().color(QPalette.ColorRole.Dark)))
+        self.theme_select_switch.stateChanged.connect(
+            self.theme_select_changed)
         self.theme_select_layout.addWidget(self.theme_select_switch)
 
         self.theme_layout.addStretch()
@@ -90,18 +104,20 @@ class ThemePanel(QWidget):
 
     def theme_select_changed(self, index):
         theme_control.set_theme(self.theme_select_switch.isChecked())
-        self.theme_select_switch.set_active_color(QColor(self.palette().color(QPalette.Highlight)))
-        self.theme_select_switch.set_bg_color(QColor(self.palette().color(QPalette.ColorRole.Dark)))
+        self.theme_select_switch.set_active_color(
+            QColor(self.palette().color(QPalette.Highlight)))
+        self.theme_select_switch.set_bg_color(
+            QColor(self.palette().color(QPalette.ColorRole.Dark)))
         self.parent.update_icons()
 
 
 class SysInfoPanel(QScrollArea):
-    
+
     name = "System Info"
-    
+
     def __init__(self, parent):
         super().__init__()
-        
+
         self.setObjectName("Kevinbot3_SettingsPanel_Panel")
         self.setWidgetResizable(True)
 
@@ -124,7 +140,11 @@ class SysInfoPanel(QScrollArea):
         self.logo_layout = QHBoxLayout()
         self.kevinbot_logo = QLabel()
         self.kevinbot_logo.setObjectName("Kevinbot3_Settings_Kevinbot_Logo")
-        self.kevinbot_logo.setPixmap(QPixmap(os.path.join(CURRENT_DIR, "icons/kevinbot.svg")))
+        self.kevinbot_logo.setPixmap(
+            QPixmap(
+                os.path.join(
+                    CURRENT_DIR,
+                    "icons/kevinbot.svg")))
         self.kevinbot_logo.setScaledContents(True)
         self.kevinbot_logo.setFixedSize(QSize(96, 96))
         self.logo_layout.addWidget(self.kevinbot_logo)
@@ -161,8 +181,11 @@ class SysInfoPanel(QScrollArea):
         self.h_line.setFrameShape(QFrame.HLine)
         self.layout.addWidget(self.h_line)
 
-        self.memory = _SysInfoItem("Memory",
-                                   str(round(psutil.virtual_memory().total / 1024 / 1024 / 1024, 2)) + "GB Total")
+        self.memory = _SysInfoItem(
+            "Memory", str(
+                round(
+                    psutil.virtual_memory().total / 1024 / 1024 / 1024, 2))
+            + "GB Total")
         self.layout.addWidget(self.memory)
 
         self.root_layout.addStretch()
@@ -206,7 +229,8 @@ class CommsPanel(QScrollArea):
 
         self.core_baud_combo = QComboBox()
         self.core_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
-        self.core_baud_combo.setCurrentText(str(settings["services"]["serial"]["p2-baud"]))
+        self.core_baud_combo.setCurrentText(
+            str(settings["services"]["serial"]["p2-baud"]))
         self.core_baud_combo.currentTextChanged.connect(self.update_core_baud)
         self.core_baud_layout.addWidget(self.core_baud_combo)
 
@@ -218,7 +242,8 @@ class CommsPanel(QScrollArea):
 
         self.xbee_baud_combo = QComboBox()
         self.xbee_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
-        self.xbee_baud_combo.setCurrentText(str(settings["services"]["serial"]["xb-baud"]))
+        self.xbee_baud_combo.setCurrentText(
+            str(settings["services"]["serial"]["xb-baud"]))
         self.xbee_baud_combo.currentTextChanged.connect(self.update_xbee_baud)
         self.xbee_baud_layout.addWidget(self.xbee_baud_combo)
 
@@ -230,7 +255,8 @@ class CommsPanel(QScrollArea):
 
         self.head_baud_combo = QComboBox()
         self.head_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
-        self.head_baud_combo.setCurrentText(str(settings["services"]["serial"]["head-baud"]))
+        self.head_baud_combo.setCurrentText(
+            str(settings["services"]["serial"]["head-baud"]))
         self.head_baud_combo.currentTextChanged.connect(self.update_head_baud)
         self.head_baud_layout.addWidget(self.head_baud_combo)
 
@@ -248,7 +274,8 @@ class CommsPanel(QScrollArea):
 
         self.core_port_edit = QLineEdit()
         self.core_port_edit.setMaximumWidth(180)
-        self.core_port_edit.setText(str(settings["services"]["serial"]["p2-port"]))
+        self.core_port_edit.setText(
+            str(settings["services"]["serial"]["p2-port"]))
         self.core_port_edit.textChanged.connect(self.update_core_port)
         self.core_port_layout.addWidget(self.core_port_edit)
 
@@ -260,7 +287,8 @@ class CommsPanel(QScrollArea):
 
         self.xbee_port_edit = QLineEdit()
         self.xbee_port_edit.setMaximumWidth(180)
-        self.xbee_port_edit.setText(str(settings["services"]["serial"]["xb-port"]))
+        self.xbee_port_edit.setText(
+            str(settings["services"]["serial"]["xb-port"]))
         self.xbee_port_edit.textChanged.connect(self.update_xbee_port)
         self.xbee_port_layout.addWidget(self.xbee_port_edit)
 
@@ -272,13 +300,15 @@ class CommsPanel(QScrollArea):
 
         self.head_port_edit = QLineEdit()
         self.head_port_edit.setMaximumWidth(180)
-        self.head_port_edit.setText(str(settings["services"]["serial"]["head-port"]))
+        self.head_port_edit.setText(
+            str(settings["services"]["serial"]["head-port"]))
         self.head_port_edit.textChanged.connect(self.update_head_port)
         self.head_port_layout.addWidget(self.head_port_edit)
 
         self.toolbox.addItem(self.ports_item, "Serial Ports")
 
-        self.restart_warning = QLabel("A restart is required for these settings to update")
+        self.restart_warning = QLabel(
+            "A restart is required for these settings to update")
         self.layout.addWidget(self.restart_warning)
 
     @staticmethod
@@ -374,7 +404,8 @@ class ServicesPanel(QScrollArea):
 
         self.uptime_os_edit = QLineEdit()
         self.uptime_os_edit.setMaximumWidth(180)
-        self.uptime_os_edit.setText(str(settings["services"]["com"]["topic-sys-uptime"]))
+        self.uptime_os_edit.setText(
+            str(settings["services"]["com"]["topic-sys-uptime"]))
         self.uptime_os_edit.textChanged.connect(self.update_uptime_os)
         self.uptime_os_layout.addWidget(self.uptime_os_edit)
 
@@ -386,7 +417,8 @@ class ServicesPanel(QScrollArea):
 
         self.uptime_core_edit = QLineEdit()
         self.uptime_core_edit.setMaximumWidth(180)
-        self.uptime_core_edit.setText(str(settings["services"]["com"]["topic-core-uptime"]))
+        self.uptime_core_edit.setText(
+            str(settings["services"]["com"]["topic-core-uptime"]))
         self.uptime_core_edit.textChanged.connect(self.update_uptime_core)
         self.uptime_core_layout.addWidget(self.uptime_core_edit)
 
@@ -398,7 +430,8 @@ class ServicesPanel(QScrollArea):
 
         self.tick_combo = QComboBox()
         self.tick_combo.addItems(map(str, settings["constants"]["ticks"]))
-        self.tick_combo.setCurrentText(str(settings["services"]["com"]["tick"]))
+        self.tick_combo.setCurrentText(
+            str(settings["services"]["com"]["tick"]))
         self.tick_combo.currentTextChanged.connect(self.update_tick)
         self.tick_layout.addWidget(self.tick_combo)
 
@@ -430,7 +463,8 @@ class ServicesPanel(QScrollArea):
 
         self.toolbox.addItem(self.mpu_item, "MPU9250 Service")
 
-        self.restart_warning = QLabel("A restart is required for these settings to update")
+        self.restart_warning = QLabel(
+            "A restart is required for these settings to update")
         self.layout.addWidget(self.restart_warning)
 
     @staticmethod

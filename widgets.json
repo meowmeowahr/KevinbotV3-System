@@ -8,9 +8,8 @@
         {
             "type": "batt",
             "uuid": "2e17b20b-d677-4a12-ac3a-b2a01d55b989",
-            "speed": 400,
             "update": 2000,
-            "b2": true
+            "b2": false
         },
         {
             "type": "clock",

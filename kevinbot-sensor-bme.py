@@ -34,15 +34,18 @@ def on_connect(client, userdata, flags, rc):
         logging.critical("Failed to connect, return code %d\n", rc)
         sys.exit()
 
+
 client = mqtt_client.Client(CLI_ID)
 client.on_connect = on_connect
 client.connect(BROKER, PORT)
+
 
 def publish(topic, msg):
     result = client.publish(topic, msg)
     status = result[0]
     if status != 0:
         logging.error(f"Failed to send message to topic {topic}")
+
 
 def loop():
     while True:

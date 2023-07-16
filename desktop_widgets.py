@@ -251,7 +251,7 @@ class BattWidget(BaseWidget):
         if "update" not in self.data:
             self.data["update"] = 2000
         if "b2" not in self.data:
-            self.data["b2"] = True
+            self.data["b2"] = False
 
         self.light_on = False
 

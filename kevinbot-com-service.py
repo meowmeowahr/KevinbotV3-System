@@ -200,7 +200,6 @@ def remote_recv_loop():
                 mesh = [mesh[i:i + settings["services"]["data_max"]]
                         for i in range(0, len(mesh),
                                        settings["services"]["data_max"])]
-                print(mesh)
                 for count, part in enumerate(mesh):
                     data_to_remote(f"core.full_mesh:{count}:"
                                    f"{len(mesh)-1}={mesh[count]}")
