@@ -6,7 +6,6 @@ import time
 import subprocess
 import threading
 import logging
-import json
 import sys
 import uuid
 
@@ -17,34 +16,28 @@ from paho.mqtt import client as mqtt_client
 
 from xbee import XBee
 
+from system_options import (
+    settings,
+    TOPIC_HUMI,
+    TOPIC_PRESSURE,
+    TOPIC_TEMP,
+    TOPIC_YAW,
+    TOPIC_PITCH,
+    TOPIC_ROLL,
+    P2_SERIAL_PORT,
+    XB_SERIAL_PORT,
+    HEAD_SERIAL_PORT,
+    P2_BAUD_RATE,
+    XB_BAUD_RATE,
+    HEAD_BAUD_RATE,
+    BATT_LOW_VOLT,
+    USING_BATT_2,
+    BROKER,
+    PORT)
+
 __version__ = "1.0.0"
 
-CURRENT_DIR: Final = os.path.dirname(os.path.realpath(__file__))
-SETTINGS_PATH: Final = os.path.join(CURRENT_DIR, 'settings.json')
-
-settings = json.load(open(SETTINGS_PATH, 'r'))
-
-XB_SERIAL_PORT: Final = settings["services"]["serial"]["xb-port"]
-XB_BAUD_RATE: Final = settings["services"]["serial"]["xb-baud"]
-
-P2_SERIAL_PORT: Final = settings["services"]["serial"]["p2-port"]
-P2_BAUD_RATE: Final = settings["services"]["serial"]["p2-baud"]
-
-HEAD_SERIAL_PORT: Final = settings["services"]["serial"]["head-port"]
-HEAD_BAUD_RATE: Final = settings["services"]["serial"]["head-baud"]
-
-BROKER: Final = settings["services"]["mqtt"]["address"]
-PORT: Final = settings["services"]["mqtt"]["port"]
-TOPIC_ROLL: Final = settings["services"]["mpu"]["topic-roll"]
-TOPIC_PITCH: Final = settings["services"]["mpu"]["topic-pitch"]
-TOPIC_YAW: Final = settings["services"]["mpu"]["topic-yaw"]
-TOPIC_TEMP: Final = settings["services"]["bme"]["topic-temp"]
-TOPIC_HUMI: Final = settings["services"]["bme"]["topic-humidity"]
-TOPIC_PRESSURE: Final = settings["services"]["bme"]["topic-pressure"]
 CLI_ID: Final = f'kevinbot-com-service-{uuid.uuid4()}'
-
-USING_BATT_2: Final = False
-BATT_LOW_VOLT: Final = 90
 
 speech_engine = "espeak"
 connected_remotes = []
@@ -52,7 +45,8 @@ connected_remotes = []
 last_alive_msg = datetime.datetime.now()
 is_alive = True
 
-sensors: Dict[Any, Any] = {"batts": [-1, -1], "mpu": [0, 0, 0], "bme": [0, 0, 0]}
+sensors: Dict[Any, Any] = {"batts": [-1, -1],
+                           "mpu": [0, 0, 0], "bme": [0, 0, 0]}
 
 shown_batt1_notif = False
 shown_batt2_notif = False
@@ -61,7 +55,8 @@ enabled = False
 
 
 def map_range(value, in_min, in_max, out_min, out_max):
-    return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
+    return out_min + (((value - in_min) / (in_max - in_min))
+                      * (out_max - out_min))
 
 
 def speak_festival(text):
@@ -97,8 +92,12 @@ def recv_loop():
                 sensors["batts"][0] = float(line[1][0]) / 10
                 sensors["batts"][1] = float(line[1][1]) / 10
                 if client:
-                    client.publish(settings["services"]["com"]["topic-batt1"], sensors["batts"][0])
-                    client.publish(settings["services"]["com"]["topic-batt2"], sensors["batts"][1])
+                    client.publish(
+                        settings["services"]["com"]["topic-batt1"],
+                        sensors["batts"][0])
+                    client.publish(
+                        settings["services"]["com"]["topic-batt2"],
+                        sensors["batts"][1])
 
                 if int(line[1][0]) < BATT_LOW_VOLT:
                     playsound.playsound(os.path.join(os.curdir,
@@ -124,7 +123,8 @@ def recv_loop():
                 logging.info(f"Enabled: {enabled}")
             if line[0] == "alive":
                 # System Tick
-                publish(settings["services"]["com"]["topic-core-uptime"], line[1])
+                publish(settings["services"]["com"]
+                        ["topic-core-uptime"], line[1])
                 if settings["services"]["com"]["tick"].lower() == "core":
                     tick()
         except (IndexError, ValueError):
@@ -163,7 +163,11 @@ def remote_recv_loop():
             print(data)
 
             if data[0].startswith("eye."):
-                head_ser.write((raw.split(".", maxsplit=1)[1] + "\n").encode("UTF-8"))
+                head_ser.write(
+                    (raw.split(
+                        ".",
+                        maxsplit=1)[1] +
+                        "\n").encode("UTF-8"))
             elif data[0] == "core.speech":
                 if speech_engine == "festival":
                     speak_festival(data[1].strip("\r\n"))
@@ -193,19 +197,29 @@ def remote_recv_loop():
             elif data[0] == "core.remotes.get_full":
                 mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"]
                 mesh = ",".join(mesh + connected_remotes)
-                mesh = [mesh[i:i+settings["services"]["data_max"]] for i in range(0, len(mesh),
-                                                                                  settings["services"]["data_max"])]
+                mesh = [mesh[i:i + settings["services"]["data_max"]]
+                        for i in range(0, len(mesh),
+                                       settings["services"]["data_max"])]
                 print(mesh)
                 for count, part in enumerate(mesh):
-                    data_to_remote(f"core.full_mesh:{count}:{len(mesh)-1}={mesh[count]}")
-                    print(f"core.full_mesh:{count}:{len(mesh)-1}={','.join(mesh)}")
+                    data_to_remote(f"core.full_mesh:{count}:"
+                                   f"{len(mesh)-1}={mesh[count]}")
+                    print(f"core.full_mesh:{count}:"
+                          f"{len(mesh)-1}={','.join(mesh)}")
             elif data[0] == "core.ping":
                 if data[1].split(",")[0] == "KEVINBOTV3":
-                    threading.Thread(target=playsound.playsound,
-                                     args=(os.path.join(os.curdir, "sounds/device-notify.wav"),),
-                                     daemon=True).start()
+                    threading.Thread(
+                        target=playsound.playsound,
+                        args=(
+                            os.path.join(
+                                os.curdir,
+                                "sounds/device-notify.wav"),
+                        ),
+                        daemon=True).start()
                     logging.info(f"Ping from {data[1].split(',')[1]}")
-                    subprocess.run(["notify-send", "Ping!", f"Ping from {data[1].split(',')[1]}"])
+                    subprocess.run(
+                        ["notify-send", "Ping!",
+                         f"Ping from {data[1].split(',')[1]}"])
             elif data[0] == "shutdown":
                 subprocess.run(["systemctl", "poweroff"])
         except Exception as e:
@@ -235,7 +249,8 @@ def on_message(client, userdata, msg):
         sensors["mpu"][1] = float(msg.payload.decode())
     elif TOPIC_YAW in msg.topic:
         sensors["mpu"][2] = float(msg.payload.decode())
-        data_to_remote(f"imu={sensors['mpu'][0]},{sensors['mpu'][1]},{sensors['mpu'][2]}")
+        data_to_remote(
+            f"imu={sensors['mpu'][0]},{sensors['mpu'][1]},{sensors['mpu'][2]}")
     elif TOPIC_TEMP in msg.topic:
         sensors["bme"][0] = float(msg.payload.decode())
     elif TOPIC_HUMI in msg.topic:
@@ -243,7 +258,8 @@ def on_message(client, userdata, msg):
     elif TOPIC_PRESSURE in msg.topic:
         sensors["bme"][2] = float(msg.payload.decode())
         data_to_remote(f"bme={sensors['bme'][0]},"
-                       f"{round(float(sensors['bme'][0]) * 1.8 + 32, 2)},{sensors['bme'][1]},{sensors['bme'][2]}")
+                       f"{round(float(sensors['bme'][0]) * 1.8 + 32, 2)},"
+                       f"{sensors['bme'][1]},{sensors['bme'][2]}")
 
 
 def publish(topic, msg):
@@ -258,7 +274,8 @@ def tick_loop():
         return
 
     while True:
-        time.sleep(float(settings["services"]["com"]["tick"].lower().strip("s")))
+        time.sleep(float(settings["services"]["com"]
+                   ["tick"].lower().strip("s")))
         tick()
 
 
