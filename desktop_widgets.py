@@ -253,8 +253,6 @@ class BattWidget(BaseWidget):
         if "b2" not in self.data:
             self.data["b2"] = False
 
-        self.light_on = False
-
         self.setFixedHeight(120)
 
         self.layout = QVBoxLayout()
