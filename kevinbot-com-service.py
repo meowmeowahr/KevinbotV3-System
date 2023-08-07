@@ -1,3 +1,4 @@
+import traceback
 from typing import Dict, Any, Final, List
 
 import datetime
@@ -154,6 +155,9 @@ def remote_recv_loop():
         try:
             data = xbee.wait_read_frame()
 
+            if data["id"] == "status":
+                logging.warning("Got XBee Status msg: %s", data["status"])
+
             if (not data['rf_data'].decode().startswith('core')) and enabled:
                 p2_ser.write(data['rf_data'])
 
@@ -225,6 +229,7 @@ def remote_recv_loop():
             data_to_remote("robot.disable=True")
             disable()
             logging.error(f"Exception in Remote Loop: {e}")
+            traceback.print_exc()
 
 
 def disable():
