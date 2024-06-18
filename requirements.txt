@@ -7,7 +7,7 @@ XBee~=2.3.2
 pyttsx3~=2.90
 psutil~=5.9.5
 py-cpuinfo~=9.0.0
-QtAwesome~=1.2.3
+QtAwesome@git+https://github.com/meowmeowahr/qtawesome@pyside6-fixes
 pyqtdarktheme~=2.1.0
 playsound~=1.3.0
 pyzmq~=25.0.2

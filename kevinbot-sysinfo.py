@@ -5,9 +5,9 @@ A simple app to view hardware and software information
 Author: Kevin Ahr
 """
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from qtpy.QtWidgets import *
+from qtpy.QtCore import *
+from qtpy.QtGui import *
 from KevinbotUI import AboutBox
 import json
 import sys

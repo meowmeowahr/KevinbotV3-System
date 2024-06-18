@@ -30,11 +30,6 @@ class MainWindow(QMainWindow):
         self.main_layout = QHBoxLayout()
         self.widget.setLayout(self.main_layout)
 
-        if theme_control.get_dark():
-            KBTheme.load(self, mode=KBTheme.Modes.Dark)
-        else:
-            KBTheme.load(self, mode=KBTheme.Modes.Light)
-
         self.scroll = QScrollArea()
 
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -107,6 +102,7 @@ class MainWindow(QMainWindow):
         self.home_layout.addLayout(self.settings_grid_layout)
 
         self.theme_panel = ThemePanel(self)
+        self.theme_panel.theme_select_switch.stateChanged.connect(self.update_icons)
         self.stacked_widget.insertWidget(THEME_PANEL_INDEX, self.theme_panel)
         
         self.sysinfo_panel = SysInfoPanel(self)
@@ -125,16 +121,15 @@ class MainWindow(QMainWindow):
     def update_icons(self):
         self.ensurePolished()
         if theme_control.get_dark():
-            self.fg_color = Qt.GlobalColor.white
-            KBTheme.load(self, mode=KBTheme.Modes.Dark)
+            KBTheme.load(self, app, mode=KBTheme.Modes.Dark)
         else:
-            self.fg_color = Qt.GlobalColor.black
-            KBTheme.load(self, mode=KBTheme.Modes.Light)
+            KBTheme.load(self, app, mode=KBTheme.Modes.Light)
+        self.ensurePolished()
 
-        self.theme_button.setIcon(QIcon(qta.icon("fa5s.paint-roller", color=self.fg_color)))
-        self.sysinfo_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.fg_color)))
-        self.comms_button.setIcon(QIcon(qta.icon("mdi.transit-connection-variant", color=self.fg_color)))
-        self.services_button.setIcon(QIcon(qta.icon("mdi.cogs", color=self.fg_color)))
+        self.theme_button.setIcon(QIcon(qta.icon("fa5s.paint-roller", color=self.palette().buttonText().color().name())))
+        self.sysinfo_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.palette().buttonText().color().name())))
+        self.comms_button.setIcon(QIcon(qta.icon("mdi.transit-connection-variant", color=self.palette().buttonText().color().name())))
+        self.services_button.setIcon(QIcon(qta.icon("mdi.cogs", color=self.palette().buttonText().color().name())))
 
     def set_page(self, page: int):
         self.stacked_widget.setCurrentIndex(page)

@@ -4,7 +4,7 @@ import json
 import functools
 
 from qtpy.QtWidgets import (QApplication, QMainWindow, QDialog, QWidget,
-                             QVBoxLayout, QLabel, QScrollArea)
+                            QVBoxLayout, QLabel, QScrollArea)
 from qtpy.QtCore import Qt, QTimer
 from qtpy.QtGui import QMoveEvent, QCloseEvent
 
@@ -35,6 +35,7 @@ def reload_settings():
     settings["order"] = []
 
     for n in range(dock.main_layout.count()):
+        # noinspection PyUnresolvedReferences
         settings["order"].append(dock.main_layout.itemAt(n).widget().data)
     save_json()
 
@@ -43,7 +44,8 @@ class DockWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.Tool | Qt.WindowType.WindowStaysOnBottomHint)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
+                            | Qt.WindowType.WindowStaysOnBottomHint)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
@@ -192,7 +194,8 @@ class AddWindow(QDialog):
 
         self.show()
 
-    def add_widget(self, widget: QWidget):
+    @staticmethod
+    def add_widget(widget: desktop_widgets.BaseWidget):
         widget.up_button.clicked.connect(
             functools.partial(dock.move_widget_up, widget))
         widget.down_button.clicked.connect(
