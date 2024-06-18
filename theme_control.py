@@ -1,38 +1,63 @@
-import os
-import configparser
+import subprocess
+from loguru import logger
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+def get_current_xfce4_theme():
+    try:
+        # Get the current theme
+        result = subprocess.run(
+            ['xfconf-query', '--channel', 'xsettings', '--property', '/Net/ThemeName'],
+            capture_output=True, text=True, check=True
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        logger.error(f"An error occurred: {e}")
+        return None
 
-LXSESSION_CONFIG = "/home/kevinbot/.config/lxsession/LXDE-pi/desktop.conf"
+def set_current_xfce4_theme(theme_name):
+    try:
+        # Set the theme
+        subprocess.run(
+            ['xfconf-query', '--channel', 'xsettings', '--property', '/Net/ThemeName', '--set', theme_name],
+            capture_output=True, text=True, check=True
+        )
+        logger.info(f"Theme set to: {theme_name}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"An error occurred: {e}")
 
-lxsession_parser = configparser.ConfigParser()
-lxsession_parser.optionxform = str
-lxsession_parser.read(LXSESSION_CONFIG)
+def set_libadwaita_theme(theme_preference):
+    try:
+        if theme_preference not in ["prefer-dark", "default"]:
+            raise ValueError("Invalid theme preference. Use 'prefer-dark' or 'default'.")
 
-LIGHT_CONFIG = os.path.join(CURRENT_DIR, "system-configs", "desktop-light.conf")
-DARK_CONFIG = os.path.join(CURRENT_DIR, "system-configs", "desktop-dark.conf")
+        # Set the libadwaita theme preference
+        subprocess.run(
+            ['gsettings', 'set', 'org.gnome.desktop.interface', 'color-scheme', theme_preference],
+            capture_output=True, text=True, check=True
+        )
+        logger.info(f"Libadwaita theme set to: {theme_preference}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"An error occurred: {e}")
 
+def set_xfwm_theme(theme_name):
+    try:
+        # Set the XFWM theme
+        subprocess.run(
+            ['xfconf-query', '--channel', 'xfwm4', '--property', '/general/theme', '--set', theme_name],
+            capture_output=True, text=True, check=True
+        )
+        logger.info(f"XFWM theme set to: {theme_name}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"An error occurred: {e}")
+
+def get_dark():
+    return get_current_xfce4_theme() == "Arc-Dark"
 
 def set_theme(dark: bool):
     if dark:
-        lxsession_parser.set("GTK", "sNet/ThemeName", "Arc-Dark")
-        lxsession_parser.set("GTK", "sNet/IconThemeName", "Papirus-Dark")
-        with open(LXSESSION_CONFIG, 'w') as fp:
-            lxsession_parser.write(fp)
+        set_current_xfce4_theme("Arc-Dark")
+        set_libadwaita_theme("prefer-dark")
+        set_xfwm_theme("Arc-Dark")
     else:
-        lxsession_parser.set("GTK", "sNet/ThemeName", "Arc-Lighter")
-        lxsession_parser.set("GTK", "sNet/IconThemeName", "Papirus-Light")
-        with open(LXSESSION_CONFIG, 'w') as fp:
-            lxsession_parser.write(fp)
-
-
-def get_dark():
-    try:
-        if lxsession_parser.get("GTK", "sNet/ThemeName") == "Arc-Dark":
-            return True
-        elif lxsession_parser.get("GTK", "sNet/ThemeName") == "Arc-Lighter":
-            return False
-        else:
-            return -1
-    except configparser.NoSectionError:
-        return -1
+        set_current_xfce4_theme("Arc")
+        set_libadwaita_theme("default")
+        set_xfwm_theme("Arc")

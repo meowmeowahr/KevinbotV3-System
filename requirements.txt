@@ -16,3 +16,4 @@ paho-mqtt~=1.6.1
 imusensor~=1.0.1
 adafruit-circuitpython-bme280~=2.6.20
 pyfiglet~=0.8.post1
+loguru
