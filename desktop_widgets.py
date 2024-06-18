@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
+from qtpy.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
                              QLabel, QLayout)
-from PyQt5.QtCore import Qt, QSize, QTimer
+from qtpy.QtCore import Qt, QSize, QTimer
 import qtawesome as qta
 
 from paho.mqtt import client as mqtt_client

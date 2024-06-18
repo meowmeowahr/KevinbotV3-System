@@ -21,9 +21,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from PyQt5.QtCore import Qt, QPoint, pyqtSlot, pyqtProperty, QPropertyAnimation, QEasingCurve
-from PyQt5.QtWidgets import QWidget, QCheckBox
-from PyQt5.QtGui import QPainter, QColor
+from qtpy.QtCore import Qt, QPoint, Slot, Property, QPropertyAnimation, QEasingCurve
+from qtpy.QtWidgets import QWidget, QCheckBox
+from qtpy.QtGui import QPainter, QColor
 
 
 def take_closest(num, collection):
@@ -120,43 +120,43 @@ class SwitchControl(QCheckBox):
     def get_bg_color(self):
         return self.bg_color
 
-    @pyqtSlot(str)
+    @Slot(str)
     def set_bg_color(self, value):
         self.bg_color = value
         self.update()
 
-    backgroundColor = pyqtProperty(str, get_bg_color, set_bg_color)
+    backgroundColor = Property(str, get_bg_color, set_bg_color)
 
     def get_circle_color(self):
         return self.circle_color
 
-    @pyqtSlot(str)
+    @Slot(str)
     def set_circle_color(self, value):
         self.circle_color = value
         self.__circle.set_color(self.circle_color)
         self.update()
 
-    circleBackgroundColor = pyqtProperty(str, get_circle_color, set_circle_color)
+    circleBackgroundColor = Property(str, get_circle_color, set_circle_color)
 
     def get_animation_duration(self):
         return self.animation_duration
 
-    @pyqtSlot(int)
+    @Slot(int)
     def set_animation_duration(self, value):
         self.animation_duration = value
         self.animation.setDuration(value)
 
-    animationDuration = pyqtProperty(int, get_animation_duration, set_animation_duration)
+    animationDuration = Property(int, get_animation_duration, set_animation_duration)
 
     def get_active_color(self):
         return self.active_color
 
-    @pyqtSlot(str)
+    @Slot(str)
     def set_active_color(self, value):
         self.active_color = value
         self.update()
 
-    activeColor = pyqtProperty(str, get_active_color, set_active_color)
+    activeColor = Property(str, get_active_color, set_active_color)
 
     def start_animation(self, checked):
         self.animation.stop()

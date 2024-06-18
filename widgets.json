@@ -2,8 +2,10 @@
     "order": [
         {
             "type": "enable",
-            "uuid": "fdcd54e4-d06e-4abe-a011-9877a79bf654",
-            "speed": 500
+            "uuid": "5f86dbe2-da1e-4fc3-824f-c325aa796271",
+            "speed": 400,
+            "update": 2000,
+            "b2": false
         },
         {
             "type": "batt",

@@ -3,10 +3,10 @@ import os
 import json
 import functools
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QDialog, QWidget,
+from qtpy.QtWidgets import (QApplication, QMainWindow, QDialog, QWidget,
                              QVBoxLayout, QLabel, QScrollArea)
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QMoveEvent, QCloseEvent
+from qtpy.QtCore import Qt, QTimer
+from qtpy.QtGui import QMoveEvent, QCloseEvent
 
 from KevinbotUI import KBTheme
 import theme_control
@@ -43,7 +43,7 @@ class DockWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.Tool)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.Tool | Qt.WindowType.WindowStaysOnBottomHint)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
