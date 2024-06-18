@@ -8,7 +8,9 @@ Author: Kevin Ahr
 from qtpy.QtWidgets import *
 from qtpy.QtCore import *
 from qtpy.QtGui import *
-from KevinbotUI import AboutBox
+from KevinbotUI import KBTheme
+from KevinbotUI.KBAbout import AboutBox
+from theme_control import get_dark
 import json
 import sys
 import os
@@ -466,6 +468,15 @@ class MainWindow(QMainWindow):
         self.timer.setInterval(settings["sysinfo"]["interval"] * 1000)
         self.timer.timeout.connect(self.update_values)
         self.timer.start()
+
+        if get_dark():
+            KBTheme.load(self, app, mode=KBTheme.Modes.Dark)
+            KBTheme.load(self.about_box, mode=KBTheme.Modes.Dark)
+            KBTheme.load(self.settings_window, mode=KBTheme.Modes.Dark)
+        else:
+            KBTheme.load(self, app, mode=KBTheme.Modes.Light)
+            KBTheme.load(self.about_box, mode=KBTheme.Modes.Light)
+            KBTheme.load(self.settings_window, mode=KBTheme.Modes.Light)
 
         self.show()
 
