@@ -42,8 +42,8 @@ class SwitchCircle(QWidget):
     def paintEvent(self, event):
         painter = QPainter()
         painter.begin(self)
-        painter.setRenderHint(QPainter.HighQualityAntialiasing)
-        painter.setPen(Qt.NoPen)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QColor(self.color))
         painter.drawEllipse(0, 0, 24, 24)
         painter.end()
@@ -172,8 +172,8 @@ class SwitchControl(QCheckBox):
     def paintEvent(self, event):
         painter = QPainter()
         painter.begin(self)
-        painter.setRenderHint(QPainter.HighQualityAntialiasing)
-        painter.setPen(Qt.NoPen)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
         if not self.isChecked():
             painter.setBrush(QColor(self.bg_color))
             painter.drawRoundedRect(0, 0, self.width(), self.height(), self.height() / 2, self.height() / 2)

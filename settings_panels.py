@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QWidget,
     QLabel,
     QVBoxLayout,
@@ -10,8 +10,8 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QComboBox,
     QSpinBox)
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QPalette, QColor, QPixmap
+from qtpy.QtCore import Qt, QSize
+from qtpy.QtGui import QPalette, QColor, QPixmap
 from KevinbotUI import SwitchControl
 import theme_control
 import socket

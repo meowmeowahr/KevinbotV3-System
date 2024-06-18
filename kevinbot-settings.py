@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from qtpy.QtWidgets import *
+from qtpy.QtCore import *
+from qtpy.QtGui import *
 from KevinbotUI import KBTheme
 from settings_panels import ThemePanel, SysInfoPanel, CommsPanel, ServicesPanel, settings, save_json
 import os
