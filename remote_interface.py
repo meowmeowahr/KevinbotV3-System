@@ -17,6 +17,9 @@ class RemoteCommand(enum.StrEnum):
     RemoteStatus = "connection.remote.status"
     Ping = "connection.ping"
 
+    NewDeviceConnect = "connection.connect"
+    NewDeviceDisconnect = "connection.disconnect"
+
     RequestEnable = "kevinbot.request.enable"
     RequestEstop = "kevinbot.request.estop"
 

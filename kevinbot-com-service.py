@@ -487,7 +487,22 @@ def remote_recv(data):
                     remote, value.split("|")[0], __version__, current_state
                 )
             )
+        elif command == RemoteCommand.NewDeviceConnect:
+            if value not in current_state.connected_remotes:
+                current_state.connected_remotes.append(value)
+                logger.info(f"Wireless device connected: {value}")
+                logger.info(f"Total devices: {current_state.connected_remotes}")
+            command_queue.add_command(
+                RemoteHandshakeCommand(
+                    remote, value.split("|")[0], __version__, current_state
+                )
+            )
         elif command == RemoteCommand.RemoteListRemove:
+            if value in current_state.connected_remotes:
+                current_state.connected_remotes.remove(value)
+                logger.info(f"Wireless device disconnected: {value}")
+            logger.info(f"Total devices: {current_state.connected_remotes}")
+        elif command == RemoteCommand.NewDeviceDisconnect:
             if value in current_state.connected_remotes:
                 current_state.connected_remotes.remove(value)
                 logger.info(f"Wireless device disconnected: {value}")
@@ -621,9 +636,6 @@ if __name__ == "__main__":
     client.on_message = on_message
     client.connect(settings.services.mqtt.address, settings.services.mqtt.port)
     client.subscribe(settings.services.mpu.topic_imu)
-    client.subscribe(settings.services.bme.topic_temp)
-    client.subscribe(settings.services.bme.topic_humidity)
-    client.subscribe(settings.services.bme.topic_pressure)
 
     # hold up until core is ready
     logger.info("Waiting for core connection")
