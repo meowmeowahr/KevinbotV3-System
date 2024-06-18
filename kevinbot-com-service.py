@@ -308,8 +308,19 @@ if __name__ == "__main__":
     # speech
     espeak_engine = pyttsx3.init("espeak")
 
+    # mqtt
+    client = mqtt_client.Client(CLI_ID)
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.connect(BROKER, PORT)
+    client.subscribe(TOPIC_ROLL)
+    client.subscribe(TOPIC_PITCH)
+    client.subscribe(TOPIC_YAW)
+    client.subscribe(TOPIC_TEMP)
+    client.subscribe(TOPIC_HUMI)
+    client.subscribe(TOPIC_PRESSURE)
+
     # threads
-    client = None
 
     recv_thread = threading.Thread(target=recv_loop, daemon=True)
     recv_thread.start()
@@ -322,18 +333,6 @@ if __name__ == "__main__":
 
     tick_thread = threading.Thread(target=tick_loop, daemon=True)
     tick_thread.start()
-
-    # mqtt
-    client = mqtt_client.Client(CLI_ID)
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.connect(BROKER, PORT)
-    client.subscribe(TOPIC_ROLL)
-    client.subscribe(TOPIC_PITCH)
-    client.subscribe(TOPIC_YAW)
-    client.subscribe(TOPIC_TEMP)
-    client.subscribe(TOPIC_HUMI)
-    client.subscribe(TOPIC_PRESSURE)
 
     # init
     data_to_remote("core.service.init=kevinbot.com")
