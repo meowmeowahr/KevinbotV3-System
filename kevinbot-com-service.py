@@ -384,4 +384,6 @@ if __name__ == "__main__":
     data_to_remote("core.service.init=kevinbot.com")
     data_to_remote("core.enabled=False")
 
+    logger.success("Comms are up!")
+
     client.loop_forever()
