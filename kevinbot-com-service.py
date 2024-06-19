@@ -145,16 +145,18 @@ def head_recv_loop():
 
 def tick():
     data_to_remote(f"os_uptime={round(get_uptime())}")
+    p2_ser.write("system.tick\n".encode("utf-8"))
+    p2_ser.write("core.errors.clear\n".encode("utf-8"))
     publish(settings["services"]["com"]["topic-sys-uptime"], get_uptime())
     publish(settings["services"]["com"]["topic-enabled"], enabled)
 
 
-def begin_remote_handshake():
-    data_to_remote("handshake.start")
+def begin_remote_handshake(uid: str):
+    data_to_remote(f"handshake.start={uid}")
     data_to_remote(f"core.enabled={enabled}")
     data_to_remote(f"core.speech-engine={speech_engine}")
     transmit_full_remote_list()
-    data_to_remote("handshake.end")
+    data_to_remote(f"handshake.end={uid}")
 
 
 def request_system_enable(ena: bool):
@@ -181,6 +183,7 @@ def transmit_full_remote_list():
                        f"{len(mesh) - 1}={mesh[count]}")
         print(f"core.full_mesh:{count}:"
               f"{len(mesh) - 1}={','.join(mesh)}")
+
 
 def remote_recv_loop():
     global speech_engine
@@ -227,7 +230,7 @@ def remote_recv_loop():
                     connected_remotes.append(data[1])
                     logging.info(f"Wireless device connected: {data[1]}")
                     logging.info(f"Total devices: {connected_remotes}")
-                begin_remote_handshake()
+                begin_remote_handshake(data[1].split("|")[0])
             elif data[0] == "core.remotes.remove":
                 if data[1] in connected_remotes:
                     connected_remotes.remove(data[1])
@@ -345,6 +348,21 @@ if __name__ == "__main__":
     client.subscribe(TOPIC_TEMP)
     client.subscribe(TOPIC_HUMI)
     client.subscribe(TOPIC_PRESSURE)
+
+    # hold up until core is ready
+    logging.info("Waiting for core connection")
+    while True:
+        p2_ser.write("connection.isready=0\n".encode("utf-8"))
+        line = p2_ser.readline().decode("utf-8").strip("\n")
+        if line == "ready":
+            # Start connection handshake
+            logging.info("Beginning for core connection handshake")
+            p2_ser.write("connection.start\n".encode("utf-8"))
+            time.sleep(2)
+            p2_ser.write("connection.ok\n".encode("utf-8"))
+            logging.info("Core is connected")
+            break
+        time.sleep(0.1)
 
     # threads
 
