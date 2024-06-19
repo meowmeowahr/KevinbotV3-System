@@ -85,55 +85,56 @@ def recv_loop():
     global sensors, enabled
 
     while True:
-        try:
-            line: List[Any] = p2_ser.readline().decode().strip("\n").split("=")
+        data = p2_ser.readline().decode().strip("\n")
+        line: List[Any] = data.split("=")
 
-            data_to_remote("{}={}\r".format(line[0], line[1]))
+        if line[0] == "batt_volts":
+            line[1] = line[1].split(",")
 
-            if line[0] == "batt_volts":
-                line[1] = line[1].split(",")
+            sensors["batts"][0] = float(line[1][0]) / 10
+            sensors["batts"][1] = float(line[1][1]) / 10
+            if client:
+                client.publish(
+                    settings["services"]["com"]["topic-batt1"],
+                    sensors["batts"][0])
+                client.publish(
+                    settings["services"]["com"]["topic-batt2"],
+                    sensors["batts"][1])
 
-                sensors["batts"][0] = float(line[1][0]) / 10
-                sensors["batts"][1] = float(line[1][1]) / 10
-                if client:
-                    client.publish(
-                        settings["services"]["com"]["topic-batt1"],
-                        sensors["batts"][0])
-                    client.publish(
-                        settings["services"]["com"]["topic-batt2"],
-                        sensors["batts"][1])
+            if int(line[1][0]) < BATT_LOW_VOLT:
+                playsound.playsound(os.path.join(os.curdir,
+                                                 "sounds/low-battery.mp3"))
+                if not shown_batt1_notif:
+                    subprocess.run(["notify-send", "Kevinbot System",
+                                    f"Battery #1 is critically low. \
+                                    \nVoltage: {float(line[1][0]) / 10}V",
+                                    "-u", "critical", "-t", "0"])
+                    shown_batt1_notif = True
 
-                if int(line[1][0]) < BATT_LOW_VOLT:
-                    playsound.playsound(os.path.join(os.curdir,
-                                                     "sounds/low-battery.mp3"))
-                    if not shown_batt1_notif:
-                        subprocess.run(["notify-send", "Kevinbot System",
-                                        f"Battery #1 is critically low. \
-                                        \nVoltage: {float(line[1][0]) / 10}V",
-                                        "-u", "critical", "-t", "0"])
-                        shown_batt1_notif = True
+            if int(line[1][1]) < BATT_LOW_VOLT and USING_BATT_2:
+                playsound.playsound(os.path.join(os.curdir,
+                                                 "sounds/low-battery.mp3"))
+                if not shown_batt2_notif:
+                    subprocess.run(["notify-send", "Kevinbot System",
+                                    f"Battery #2 is critically low. \
+                                    \nVoltage: {float(line[1][1]) / 10}V",
+                                    "-u", "critical", "-t", "0"])
+                    shown_batt2_notif = True
+        elif line[0] == "robot.disable":
+            enabled = not line[1].lower() in ["true", "t"]
+            logging.info(f"Enabled: {enabled}")
+        elif line[0] == "alive":
+            # System Tick
+            publish(settings["services"]["com"]
+                    ["topic-core-uptime"], line[1])
+            if settings["services"]["com"]["tick"].lower() == "core":
+                tick()
+        elif line[0] == "connection.requesthandshake":
+            logging.warning("Handshake requested")
+            perform_core_handshake()
+            request_system_enable(False)
 
-                if int(line[1][1]) < BATT_LOW_VOLT and USING_BATT_2:
-                    playsound.playsound(os.path.join(os.curdir,
-                                                     "sounds/low-battery.mp3"))
-                    if not shown_batt2_notif:
-                        subprocess.run(["notify-send", "Kevinbot System",
-                                        f"Battery #2 is critically low. \
-                                        \nVoltage: {float(line[1][1]) / 10}V",
-                                        "-u", "critical", "-t", "0"])
-                        shown_batt2_notif = True
-            elif line[0] == "robot.disable":
-                enabled = not line[1].lower() in ["true", "t"]
-                logging.info(f"Enabled: {enabled}")
-            if line[0] == "alive":
-                # System Tick
-                publish(settings["services"]["com"]
-                        ["topic-core-uptime"], line[1])
-                if settings["services"]["com"]["tick"].lower() == "core":
-                    tick()
-        except (IndexError, ValueError):
-            # data is corrupt
-            pass
+        # TODO: Re-tx data to remote
 
 
 def head_recv_loop():
@@ -146,7 +147,6 @@ def head_recv_loop():
 def tick():
     data_to_remote(f"os_uptime={round(get_uptime())}")
     p2_ser.write("system.tick\n".encode("utf-8"))
-    p2_ser.write("core.errors.clear\n".encode("utf-8"))
     publish(settings["services"]["com"]["topic-sys-uptime"], get_uptime())
     publish(settings["services"]["com"]["topic-enabled"], enabled)
 
@@ -255,14 +255,9 @@ def remote_recv_loop():
             elif data[0] == "shutdown":
                 subprocess.run(["systemctl", "poweroff"])
         except Exception as e:
-            data_to_remote("robot.disable=True")
-            disable()
+            request_system_enable(False)
             logging.error(f"Exception in Remote Loop: {e}")
             traceback.print_exc()
-
-
-def disable():
-    p2_ser.write("stop".encode("UTF-8"))
 
 
 def on_connect(cli, userdata, flags, rc):
@@ -312,6 +307,22 @@ def tick_loop():
         tick()
 
 
+def perform_core_handshake():
+    while True:
+        p2_ser.write("connection.isready=0\n".encode("utf-8"))
+        line = p2_ser.readline().decode("utf-8").strip("\n")
+        if line == "ready":
+            # Start connection handshake
+            logging.info("Beginning for core connection handshake")
+            p2_ser.write("connection.start\n".encode("utf-8"))
+            p2_ser.write("core.errors.clear\n".encode("utf-8"))
+            time.sleep(2)
+            p2_ser.write("connection.ok\n".encode("utf-8"))
+            logging.info("Core is connected")
+            break
+        time.sleep(0.1)
+
+
 if __name__ == "__main__":
     # banner
     try:
@@ -351,18 +362,7 @@ if __name__ == "__main__":
 
     # hold up until core is ready
     logging.info("Waiting for core connection")
-    while True:
-        p2_ser.write("connection.isready=0\n".encode("utf-8"))
-        line = p2_ser.readline().decode("utf-8").strip("\n")
-        if line == "ready":
-            # Start connection handshake
-            logging.info("Beginning for core connection handshake")
-            p2_ser.write("connection.start\n".encode("utf-8"))
-            time.sleep(2)
-            p2_ser.write("connection.ok\n".encode("utf-8"))
-            logging.info("Core is connected")
-            break
-        time.sleep(0.1)
+    perform_core_handshake()
 
     # threads
 
