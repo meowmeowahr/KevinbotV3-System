@@ -46,8 +46,11 @@ connected_remotes = []
 last_alive_msg = datetime.datetime.now()
 is_alive = True
 
-sensors: Dict[Any, Any] = {"batts": [-1, -1],
-                           "mpu": [0, 0, 0], "bme": [0, 0, 0]}
+sensors: Dict[Any, Any] = {
+    "batts": [-1, -1],
+    "mpu": [0, 0, 0],
+    "bme": [0, 0, 0]
+}
 
 shown_batt1_notif = False
 shown_batt2_notif = False
@@ -146,6 +149,13 @@ def tick():
     publish(settings["services"]["com"]["topic-enabled"], enabled)
 
 
+def begin_remote_handshake():
+    data_to_remote("handshake.start")
+    data_to_remote(f"core.enabled={enabled}")
+    data_to_remote(f"core.speech-engine={speech_engine}")
+    data_to_remote("handshake.end")
+
+
 def remote_recv_loop():
     global speech_engine
     global enabled
@@ -191,8 +201,7 @@ def remote_recv_loop():
                     connected_remotes.append(data[1])
                     logging.info(f"Wireless device connected: {data[1]}")
                     logging.info(f"Total devices: {connected_remotes}")
-                data_to_remote(f"core.enabled={enabled}")
-                data_to_remote(f"core.speech-engine={speech_engine}")
+                begin_remote_handshake()
             elif data[0] == "core.remotes.remove":
                 if data[1] in connected_remotes:
                     connected_remotes.remove(data[1])
@@ -236,7 +245,7 @@ def disable():
     p2_ser.write("stop".encode("UTF-8"))
 
 
-def on_connect(client, userdata, flags, rc):
+def on_connect(cli, userdata, flags, rc):
     if rc == 0:
         logging.info("Connected to MQTT Broker")
     else:
@@ -244,7 +253,7 @@ def on_connect(client, userdata, flags, rc):
         sys.exit()
 
 
-def on_message(client, userdata, msg):
+def on_message(cli, userdata, msg):
     global sensors
 
     if TOPIC_ROLL in msg.topic:
