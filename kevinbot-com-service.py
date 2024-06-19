@@ -6,9 +6,10 @@ import os
 import time
 import subprocess
 import threading
-import logging
 import sys
 import uuid
+
+from loguru import logger
 
 import playsound
 import pyttsx3
@@ -122,7 +123,7 @@ def recv_loop():
                     shown_batt2_notif = True
         elif line[0] == "robot.disable":
             enabled = not line[1].lower() in ["true", "t"]
-            logging.info(f"Enabled: {enabled}")
+            logger.info(f"Enabled: {enabled}")
         elif line[0] == "alive":
             # System Tick
             publish(settings["services"]["com"]
@@ -130,7 +131,7 @@ def recv_loop():
             if settings["services"]["com"]["tick"].lower() == "core":
                 tick()
         elif line[0] == "connection.requesthandshake":
-            logging.warning("Handshake requested")
+            logger.warning("Handshake requested")
             perform_core_handshake()
             request_system_enable(False)
 
@@ -162,7 +163,7 @@ def begin_remote_handshake(uid: str):
 def request_system_enable(ena: bool):
     global enabled
     enabled = ena
-    logging.info(f"Enabled: {enabled}")
+    logger.info(f"Enabled: {enabled}")
     p2_ser.write("head_effect=color1\n".encode("utf-8"))
     p2_ser.write("body_effect=color1\n".encode("utf-8"))
     p2_ser.write("base_effect=color1\n".encode("utf-8"))
@@ -195,7 +196,7 @@ def remote_recv_loop():
             data = xbee.wait_read_frame()
 
             if data["id"] == "status":
-                logging.warning("Got XBee Status msg: %s", data["status"])
+                logger.warning("Got XBee Status msg: %s", data["status"])
 
             if (not data['rf_data'].decode().startswith('core')) and enabled:
                 p2_ser.write(data['rf_data'])
@@ -228,14 +229,14 @@ def remote_recv_loop():
             elif data[0] == "core.remotes.add":
                 if not data[1] in connected_remotes:
                     connected_remotes.append(data[1])
-                    logging.info(f"Wireless device connected: {data[1]}")
-                    logging.info(f"Total devices: {connected_remotes}")
+                    logger.info(f"Wireless device connected: {data[1]}")
+                    logger.info(f"Total devices: {connected_remotes}")
                 begin_remote_handshake(data[1].split("|")[0])
             elif data[0] == "core.remotes.remove":
                 if data[1] in connected_remotes:
                     connected_remotes.remove(data[1])
-                    logging.info(f"Wireless device disconnected: {data[1]}")
-                logging.info(f"Total devices: {connected_remotes}")
+                    logger.info(f"Wireless device disconnected: {data[1]}")
+                logger.info(f"Total devices: {connected_remotes}")
             elif data[0] == "core.remotes.get_full":
                 transmit_full_remote_list()
             elif data[0] == "core.ping":
@@ -248,7 +249,7 @@ def remote_recv_loop():
                                 "sounds/device-notify.wav"),
                         ),
                         daemon=True).start()
-                    logging.info(f"Ping from {data[1].split(',')[1]}")
+                    logger.info(f"Ping from {data[1].split(',')[1]}")
                     subprocess.run(
                         ["notify-send", "Ping!",
                          f"Ping from {data[1].split(',')[1]}"])
@@ -256,15 +257,15 @@ def remote_recv_loop():
                 subprocess.run(["systemctl", "poweroff"])
         except Exception as e:
             request_system_enable(False)
-            logging.error(f"Exception in Remote Loop: {e}")
+            logger.error(f"Exception in Remote Loop: {e}")
             traceback.print_exc()
 
 
 def on_connect(cli, userdata, flags, rc):
     if rc == 0:
-        logging.info("Connected to MQTT Broker")
+        logger.success("Connected to MQTT Broker")
     else:
-        logging.critical(f"Failed to connect, return code {rc}")
+        logger.critical(f"Failed to connect, return code {rc}")
         sys.exit()
 
 
@@ -294,7 +295,7 @@ def publish(topic, msg):
     result = client.publish(topic, msg)
     status = result[0]
     if status != 0:
-        logging.error(f"Failed to send message to topic {topic}")
+        logger.error(f"Failed to send message to topic {topic}")
 
 
 def tick_loop():
@@ -313,12 +314,12 @@ def perform_core_handshake():
         line = p2_ser.readline().decode("utf-8").strip("\n")
         if line == "ready":
             # Start connection handshake
-            logging.info("Beginning for core connection handshake")
+            logger.info("Beginning core connection handshake")
             p2_ser.write("connection.start\n".encode("utf-8"))
             p2_ser.write("core.errors.clear\n".encode("utf-8"))
             time.sleep(2)
             p2_ser.write("connection.ok\n".encode("utf-8"))
-            logging.info("Core is connected")
+            logger.success("Core is connected")
             break
         time.sleep(0.1)
 
@@ -335,7 +336,8 @@ if __name__ == "__main__":
     print("\033[0m", end=None)
 
     # logging
-    logging.basicConfig(level=settings["logging"]["level"])
+    logger.remove()
+    logger.add(sys.stderr, level=settings["logging"]["level"])
 
     # serial
     xb_ser = serial.Serial(XB_SERIAL_PORT, baudrate=XB_BAUD_RATE)
@@ -361,7 +363,7 @@ if __name__ == "__main__":
     client.subscribe(TOPIC_PRESSURE)
 
     # hold up until core is ready
-    logging.info("Waiting for core connection")
+    logger.info("Waiting for core connection")
     perform_core_handshake()
 
     # threads
