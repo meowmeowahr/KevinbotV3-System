@@ -153,8 +153,34 @@ def begin_remote_handshake():
     data_to_remote("handshake.start")
     data_to_remote(f"core.enabled={enabled}")
     data_to_remote(f"core.speech-engine={speech_engine}")
+    transmit_full_remote_list()
     data_to_remote("handshake.end")
 
+
+def request_system_enable(ena: bool):
+    global enabled
+    enabled = ena
+    logging.info(f"Enabled: {enabled}")
+    p2_ser.write("head_effect=color1\n".encode("utf-8"))
+    p2_ser.write("body_effect=color1\n".encode("utf-8"))
+    p2_ser.write("base_effect=color1\n".encode("utf-8"))
+    p2_ser.write("head_color1=000000\n".encode("utf-8"))
+    p2_ser.write("body_color1=000000\n".encode("utf-8"))
+    p2_ser.write("base_color1=000000\n".encode("utf-8"))
+    data_to_remote(f"core.enabled={enabled}")
+
+
+def transmit_full_remote_list():
+    mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"]
+    mesh = ",".join(mesh + connected_remotes)
+    mesh = [mesh[i:i + settings["services"]["data_max"]]
+            for i in range(0, len(mesh),
+                           settings["services"]["data_max"])]
+    for count, part in enumerate(mesh):
+        data_to_remote(f"core.full_mesh:{count}:"
+                       f"{len(mesh) - 1}={mesh[count]}")
+        print(f"core.full_mesh:{count}:"
+              f"{len(mesh) - 1}={','.join(mesh)}")
 
 def remote_recv_loop():
     global speech_engine
@@ -193,9 +219,9 @@ def remote_recv_loop():
             elif data[0] == "robot.disable":
                 enabled = not data[1].lower() in ["true", "t"]
                 p2_ser.write("stop".encode("UTF-8"))
-            elif data[0] == "enabled":
+            elif data[0] == "request.enabled":
                 enabled = data[1].lower() in ["true", "t"]
-                logging.info(f"Enabled: {enabled}")
+                request_system_enable(enabled)
             elif data[0] == "core.remotes.add":
                 if not data[1] in connected_remotes:
                     connected_remotes.append(data[1])
@@ -208,16 +234,7 @@ def remote_recv_loop():
                     logging.info(f"Wireless device disconnected: {data[1]}")
                 logging.info(f"Total devices: {connected_remotes}")
             elif data[0] == "core.remotes.get_full":
-                mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"]
-                mesh = ",".join(mesh + connected_remotes)
-                mesh = [mesh[i:i + settings["services"]["data_max"]]
-                        for i in range(0, len(mesh),
-                                       settings["services"]["data_max"])]
-                for count, part in enumerate(mesh):
-                    data_to_remote(f"core.full_mesh:{count}:"
-                                   f"{len(mesh)-1}={mesh[count]}")
-                    print(f"core.full_mesh:{count}:"
-                          f"{len(mesh)-1}={','.join(mesh)}")
+                transmit_full_remote_list()
             elif data[0] == "core.ping":
                 if data[1].split(",")[0] == "KEVINBOTV3":
                     threading.Thread(
