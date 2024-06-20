@@ -1,5 +1,7 @@
 import traceback
-from typing import Dict, Any, Final, List
+from typing import Any, Final, List
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 
 import datetime
 import os
@@ -41,22 +43,20 @@ __version__ = "1.0.0"
 
 CLI_ID: Final = f'kevinbot-com-service-{uuid.uuid4()}'
 
-speech_engine = "espeak"
-connected_remotes = []
 
-last_alive_msg = datetime.datetime.now()
-is_alive = True
-
-sensors: Dict[Any, Any] = {
-    "batts": [-1, -1],
-    "mpu": [0, 0, 0],
-    "bme": [0, 0, 0]
-}
-
-shown_batt1_notif = False
-shown_batt2_notif = False
-
-enabled = False
+@dataclass
+class CurrentStateManager:
+    enabled: bool = False
+    speech_engine: str = "espeak"
+    last_alive_msg: datetime.datetime = dataclass_field(default_factory=lambda: datetime.datetime.now())
+    core_alive: bool = True
+    battery_notifications_displayed: list[bool] = dataclass_field(default_factory=lambda: [False, False])
+    connected_remotes: list[str] = dataclass_field(default_factory=list)
+    sensors: dict = dataclass_field(default_factory=lambda: {
+        "batts": [-1, -1],
+        "mpu": [0, 0, 0],
+        "bme": [0, 0, 0]
+    })
 
 
 def map_range(value, in_min, in_max, out_min, out_max):
@@ -82,9 +82,6 @@ def data_to_remote(data):
 
 
 def recv_loop():
-    global shown_batt1_notif, shown_batt2_notif
-    global sensors, enabled
-
     while True:
         data = p2_ser.readline().decode().strip("\n")
         line: List[Any] = data.split("=")
@@ -93,35 +90,35 @@ def recv_loop():
         if line[0] == "bms.voltages":
             line[1] = line[1].split(",")
 
-            sensors["batts"][0] = float(line[1][0]) / 10
-            sensors["batts"][1] = float(line[1][1]) / 10
+            current_state.sensors["batts"][0] = float(line[1][0]) / 10
+            current_state.sensors["batts"][1] = float(line[1][1]) / 10
             if client:
                 client.publish(
                     settings["services"]["com"]["topic-batt1"],
-                    sensors["batts"][0])
+                    current_state.sensors["batts"][0])
                 client.publish(
                     settings["services"]["com"]["topic-batt2"],
-                    sensors["batts"][1])
+                    current_state.sensors["batts"][1])
 
             if int(line[1][0]) < BATT_LOW_VOLT:
                 playsound.playsound(os.path.join(os.curdir,
                                                  "sounds/low-battery.mp3"), False)
-                if not shown_batt1_notif:
+                if not current_state.battery_notifications_displayed[0]:
                     subprocess.run(["notify-send", "Kevinbot System",
                                     f"Battery #1 is critically low. \
                                     \nVoltage: {float(line[1][0]) / 10}V",
                                     "-u", "critical", "-t", "0"])
-                    shown_batt1_notif = True
+                    current_state.battery_notifications_displayed[0] = True
 
             if int(line[1][1]) < BATT_LOW_VOLT and USING_BATT_2:
                 playsound.playsound(os.path.join(os.curdir,
                                                  "sounds/low-battery.mp3"))
-                if not shown_batt2_notif:
+                if not current_state.battery_notifications_displayed[1]:
                     subprocess.run(["notify-send", "Kevinbot System",
                                     f"Battery #2 is critically low. \
                                     \nVoltage: {float(line[1][1]) / 10}V",
                                     "-u", "critical", "-t", "0"])
-                    shown_batt2_notif = True
+                    current_state.battery_notifications_displayed[1] = True
         elif line[0] == "robot.disable":
             enabled = not line[1].lower() in ["true", "t"]
             logger.info(f"Enabled: {enabled}")
@@ -150,19 +147,18 @@ def tick():
     data_to_remote(f"os_uptime={round(get_uptime())}")
     p2_ser.write("system.tick\n".encode("utf-8"))
     publish(settings["services"]["com"]["topic-sys-uptime"], get_uptime())
-    publish(settings["services"]["com"]["topic-enabled"], enabled)
+    publish(settings["services"]["com"]["topic-enabled"], current_state.enabled)
 
 
 def begin_remote_handshake(uid: str):
     data_to_remote(f"handshake.start={uid}")
-    data_to_remote(f"core.enabled={enabled}")
-    data_to_remote(f"core.speech-engine={speech_engine}")
+    data_to_remote(f"core.enabled={current_state.enabled}")
+    data_to_remote(f"core.speech-engine={current_state.speech_engine}")
     transmit_full_remote_list()
     data_to_remote(f"handshake.end={uid}")
 
 
 def request_system_enable(ena: bool):
-    global enabled
     enabled = ena
     logger.info(f"Enabled: {enabled}")
     p2_ser.write("head_effect=color1\n".encode("utf-8"))
@@ -176,7 +172,7 @@ def request_system_enable(ena: bool):
 
 def transmit_full_remote_list():
     mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"]
-    mesh = ",".join(mesh + connected_remotes)
+    mesh = ",".join(mesh + current_state.connected_remotes)
     mesh = [mesh[i:i + settings["services"]["data_max"]]
             for i in range(0, len(mesh),
                            settings["services"]["data_max"])]
@@ -188,10 +184,6 @@ def transmit_full_remote_list():
 
 
 def remote_recv_loop():
-    global speech_engine
-    global enabled
-    global connected_remotes
-
     while True:
         try:
             data = xbee.wait_read_frame()
@@ -199,7 +191,7 @@ def remote_recv_loop():
             if data["id"] == "status":
                 logger.warning("Got XBee Status msg: %s", data["status"])
 
-            if (not data['rf_data'].decode().startswith('core')) and enabled:
+            if (not data['rf_data'].decode().startswith('core')) and current_state.enabled:
                 p2_ser.write(data['rf_data'])
 
             raw = data['rf_data'].decode().strip("\r\n")
@@ -212,32 +204,32 @@ def remote_recv_loop():
                     (raw.split(
                         ".",
                         maxsplit=1)[1] +
-                        "\n").encode("UTF-8"))
+                     "\n").encode("UTF-8"))
             elif data[0] == "core.speech":
-                if speech_engine == "festival":
+                if current_state.speech_engine == "festival":
                     speak_festival(data[1].strip("\r\n"))
-                elif speech_engine == "espeak":
+                elif current_state.speech_engine == "espeak":
                     espeak_engine.say(data[1].strip("\r\n"))
                     espeak_engine.runAndWait()
             elif data[0] == "core.speech-engine":
-                speech_engine = data[1].strip("\r\n")
+                current_state.speech_engine = data[1].strip("\r\n")
             elif data[0] == "robot.disable":
-                enabled = not data[1].lower() in ["true", "t"]
+                current_state.enabled = not data[1].lower() in ["true", "t"]
                 p2_ser.write("stop".encode("UTF-8"))
             elif data[0] == "request.enabled":
                 enabled = data[1].lower() in ["true", "t"]
                 request_system_enable(enabled)
             elif data[0] == "core.remotes.add":
-                if not data[1] in connected_remotes:
-                    connected_remotes.append(data[1])
+                if not data[1] in current_state.connected_remotes:
+                    current_state.connected_remotes.append(data[1])
                     logger.info(f"Wireless device connected: {data[1]}")
-                    logger.info(f"Total devices: {connected_remotes}")
+                    logger.info(f"Total devices: {current_state.connected_remotes}")
                 begin_remote_handshake(data[1].split("|")[0])
             elif data[0] == "core.remotes.remove":
-                if data[1] in connected_remotes:
-                    connected_remotes.remove(data[1])
+                if data[1] in current_state.connected_remotes:
+                    current_state.connected_remotes.remove(data[1])
                     logger.info(f"Wireless device disconnected: {data[1]}")
-                logger.info(f"Total devices: {connected_remotes}")
+                logger.info(f"Total devices: {current_state.connected_remotes}")
             elif data[0] == "core.remotes.get_full":
                 transmit_full_remote_list()
             elif data[0] == "core.ping":
@@ -271,25 +263,25 @@ def on_connect(cli, userdata, flags, rc):
 
 
 def on_message(cli, userdata, msg):
-    global sensors
-
     if TOPIC_ROLL in msg.topic:
-        sensors["mpu"][0] = float(msg.payload.decode())
+        current_state.sensors["mpu"][0] = float(msg.payload.decode())
     elif TOPIC_PITCH in msg.topic:
-        sensors["mpu"][1] = float(msg.payload.decode())
+        current_state.sensors["mpu"][1] = float(msg.payload.decode())
     elif TOPIC_YAW in msg.topic:
-        sensors["mpu"][2] = float(msg.payload.decode())
+        current_state.sensors["mpu"][2] = float(msg.payload.decode())
         data_to_remote(
-            f"imu={sensors['mpu'][0]},{sensors['mpu'][1]},{sensors['mpu'][2]}")
+            f"imu={current_state.sensors['mpu'][0]},"
+            f"{current_state.sensors['mpu'][1]},"
+            f"{current_state.sensors['mpu'][2]}")
     elif TOPIC_TEMP in msg.topic:
-        sensors["bme"][0] = float(msg.payload.decode())
+        current_state.sensors["bme"][0] = float(msg.payload.decode())
     elif TOPIC_HUMI in msg.topic:
-        sensors["bme"][1] = float(msg.payload.decode())
+        current_state.sensors["bme"][1] = float(msg.payload.decode())
     elif TOPIC_PRESSURE in msg.topic:
-        sensors["bme"][2] = float(msg.payload.decode())
-        data_to_remote(f"bme={sensors['bme'][0]},"
-                       f"{round(float(sensors['bme'][0]) * 1.8 + 32, 2)},"
-                       f"{sensors['bme'][1]},{sensors['bme'][2]}")
+        current_state.sensors["bme"][2] = float(msg.payload.decode())
+        data_to_remote(f"bme={current_state.sensors['bme'][0]},"
+                       f"{round(float(current_state.sensors['bme'][0]) * 1.8 + 32, 2)},"
+                       f"{current_state.sensors['bme'][1]},{current_state.sensors['bme'][2]}")
 
 
 def publish(topic, msg):
@@ -305,7 +297,7 @@ def tick_loop():
 
     while True:
         time.sleep(float(settings["services"]["com"]
-                   ["tick"].lower().strip("s")))
+                         ["tick"].lower().strip("s")))
         tick()
 
 
@@ -328,12 +320,15 @@ if __name__ == "__main__":
     # banner
     try:
         import pyfiglet
+
         print("\033[94m", end=None)
         print(pyfiglet.Figlet().renderText("Kevinbot COM"))
     except ImportError:
         print("\033[94mKevinbot COM")
         pyfiglet = None
     print("\033[0m", end=None)
+
+    current_state = CurrentStateManager()
 
     # logging
     logger.remove()
