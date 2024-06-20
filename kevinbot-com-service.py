@@ -88,8 +88,9 @@ def recv_loop():
     while True:
         data = p2_ser.readline().decode().strip("\n")
         line: List[Any] = data.split("=")
+        print(line)
 
-        if line[0] == "batt_volts":
+        if line[0] == "bms.voltages":
             line[1] = line[1].split(",")
 
             sensors["batts"][0] = float(line[1][0]) / 10
@@ -104,7 +105,7 @@ def recv_loop():
 
             if int(line[1][0]) < BATT_LOW_VOLT:
                 playsound.playsound(os.path.join(os.curdir,
-                                                 "sounds/low-battery.mp3"))
+                                                 "sounds/low-battery.mp3"), False)
                 if not shown_batt1_notif:
                     subprocess.run(["notify-send", "Kevinbot System",
                                     f"Battery #1 is critically low. \
@@ -317,7 +318,6 @@ def perform_core_handshake():
             logger.info("Beginning core connection handshake")
             p2_ser.write("connection.start\n".encode("utf-8"))
             p2_ser.write("core.errors.clear\n".encode("utf-8"))
-            time.sleep(2)
             p2_ser.write("connection.ok\n".encode("utf-8"))
             logger.success("Core is connected")
             break
