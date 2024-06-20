@@ -23,13 +23,6 @@
         {
             "type": "clock",
             "uuid": "b84c0e2d-62cd-4ba9-b1e6-444d1ff0618a"
-        },
-        {
-            "type": "batt",
-            "uuid": "71863060-a947-4551-964e-d9ae50ed8a0e",
-            "speed": 400,
-            "update": 2000,
-            "b2": false
         }
     ]
 }

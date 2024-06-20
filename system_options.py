@@ -27,3 +27,28 @@ TOPIC_PRESSURE = settings["services"]["bme"]["topic-pressure"]
 
 USING_BATT_2 = False
 BATT_LOW_VOLT = 90
+
+SETTING_COMBOS = {
+    "bauds": [
+        4800,
+        9600,
+        19200,
+        38400,
+        57600,
+        115200,
+        230400,
+        460800,
+        624000
+    ],
+    "ticks": [
+        "CORE",
+        "0.1s",
+        "0.25s",
+        "0.4s",
+        "0.6s",
+        "0.8s",
+        "1s",
+        "1.5s",
+        "2s"
+    ]
+}

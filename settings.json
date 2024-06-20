@@ -3,33 +3,10 @@
         "interval": 2
     },
     "settings": {
-        "page": 3
+        "page": 2
     },
     "logging": {
         "level": 10
-    },
-    "constants": {
-        "bauds": [
-            4800,
-            9600,
-            19200,
-            38400,
-            57600,
-            115200,
-            230400,
-            460800
-        ],
-        "ticks": [
-            "CORE",
-            "0.1s",
-            "0.25s",
-            "0.4s",
-            "0.6s",
-            "0.8s",
-            "1s",
-            "1.5s",
-            "2s"
-        ]
     },
     "services": {
         "mqtt": {
@@ -37,8 +14,8 @@
             "address": "localhost"
         },
         "serial": {
-            "p2-baud": 230400,
-            "p2-port": "/dev/ttyAMA1",
+            "p2-baud": 624000,
+            "p2-port": "/dev/ttyAMA2",
             "xb-baud": 460800,
             "xb-port": "/dev/ttyAMA0",
             "head-baud": 115200,

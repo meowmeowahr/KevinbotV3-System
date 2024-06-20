@@ -20,6 +20,8 @@ import psutil
 import os
 import platform
 
+from system_options import SETTING_COMBOS
+
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
 
@@ -72,7 +74,7 @@ class ThemePanel(QWidget):
 
         self.label = QLabel(self.name)
         self.label.setStyleSheet("font-weight: bold;")
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.theme_layout.addWidget(self.label)
 
         self.theme_layout.addStretch()
@@ -86,7 +88,7 @@ class ThemePanel(QWidget):
         self.ensurePolished()
         self.theme_select_switch = SwitchControl()
         self.theme_select_switch.set_active_color(
-            QColor(self.palette().color(QPalette.Highlight)))
+            QColor(self.palette().color(QPalette.ColorRole.Highlight)))
         self.theme_select_switch.set_bg_color(
             QColor(self.palette().color(QPalette.ColorRole.Dark)))
         self.theme_select_switch.stateChanged.connect(
@@ -102,10 +104,10 @@ class ThemePanel(QWidget):
             self.theme_select_switch.setChecked(False)
             self.theme_select_switch.start_animation(False)
 
-    def theme_select_changed(self, index):
+    def theme_select_changed(self):
         theme_control.set_theme(self.theme_select_switch.isChecked())
         self.theme_select_switch.set_active_color(
-            QColor(self.palette().color(QPalette.Highlight)))
+            QColor(self.palette().color(QPalette.ColorRole.Highlight)))
         self.theme_select_switch.set_bg_color(
             QColor(self.palette().color(QPalette.ColorRole.Dark)))
         self.parent.update_icons()
@@ -129,7 +131,7 @@ class SysInfoPanel(QScrollArea):
 
         self.label = QLabel(self.name)
         self.label.setStyleSheet("font-weight: bold;")
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.root_layout.addWidget(self.label)
 
         self.root_layout.addStretch()
@@ -153,32 +155,32 @@ class SysInfoPanel(QScrollArea):
 
         self.name = QLabel("Kevinbot v3")
         self.name.setStyleSheet("font-size: 18px; font-weight: bold;")
-        self.name.setAlignment(Qt.AlignCenter)
+        self.name.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout.addWidget(self.name)
 
         self.h_line = QFrame()
-        self.h_line.setFrameShape(QFrame.HLine)
+        self.h_line.setFrameShape(QFrame.Shape.HLine)
         self.layout.addWidget(self.h_line)
 
         self.hostname = _SysInfoItem("Hostname", socket.gethostname())
         self.layout.addWidget(self.hostname)
 
         self.h_line = QFrame()
-        self.h_line.setFrameShape(QFrame.HLine)
+        self.h_line.setFrameShape(QFrame.Shape.HLine)
         self.layout.addWidget(self.h_line)
 
         self.kernel = _SysInfoItem("Kernel Version", platform.release())
         self.layout.addWidget(self.kernel)
 
         self.h_line = QFrame()
-        self.h_line.setFrameShape(QFrame.HLine)
+        self.h_line.setFrameShape(QFrame.Shape.HLine)
         self.layout.addWidget(self.h_line)
 
         self.board = _SysInfoItem("Board", detect_model())
         self.layout.addWidget(self.board)
 
         self.h_line = QFrame()
-        self.h_line.setFrameShape(QFrame.HLine)
+        self.h_line.setFrameShape(QFrame.Shape.HLine)
         self.layout.addWidget(self.h_line)
 
         self.memory = _SysInfoItem(
@@ -208,7 +210,7 @@ class CommsPanel(QScrollArea):
 
         self.label = QLabel(self.name)
         self.label.setStyleSheet("font-weight: bold;")
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.root_layout.addWidget(self.label)
 
         self.layout = QVBoxLayout()
@@ -228,7 +230,7 @@ class CommsPanel(QScrollArea):
         self.core_baud_layout.addWidget(self.core_baud_label)
 
         self.core_baud_combo = QComboBox()
-        self.core_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
+        self.core_baud_combo.addItems(list(map(str, SETTING_COMBOS["bauds"])))
         self.core_baud_combo.setCurrentText(
             str(settings["services"]["serial"]["p2-baud"]))
         self.core_baud_combo.currentTextChanged.connect(self.update_core_baud)
@@ -241,7 +243,7 @@ class CommsPanel(QScrollArea):
         self.xbee_baud_layout.addWidget(self.xbee_baud_label)
 
         self.xbee_baud_combo = QComboBox()
-        self.xbee_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
+        self.xbee_baud_combo.addItems(list(map(str, SETTING_COMBOS["bauds"])))
         self.xbee_baud_combo.setCurrentText(
             str(settings["services"]["serial"]["xb-baud"]))
         self.xbee_baud_combo.currentTextChanged.connect(self.update_xbee_baud)
@@ -254,7 +256,7 @@ class CommsPanel(QScrollArea):
         self.head_baud_layout.addWidget(self.head_baud_label)
 
         self.head_baud_combo = QComboBox()
-        self.head_baud_combo.addItems(map(str, settings["constants"]["bauds"]))
+        self.head_baud_combo.addItems(list(map(str, SETTING_COMBOS["bauds"])))
         self.head_baud_combo.setCurrentText(
             str(settings["services"]["serial"]["head-baud"]))
         self.head_baud_combo.currentTextChanged.connect(self.update_head_baud)
@@ -359,7 +361,7 @@ class ServicesPanel(QScrollArea):
 
         self.label = QLabel(self.name)
         self.label.setStyleSheet("font-weight: bold;")
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.root_layout.addWidget(self.label)
 
         self.layout = QVBoxLayout()
@@ -429,7 +431,7 @@ class ServicesPanel(QScrollArea):
         self.tick_layout.addWidget(self.tick_label)
 
         self.tick_combo = QComboBox()
-        self.tick_combo.addItems(map(str, settings["constants"]["ticks"]))
+        self.tick_combo.addItems(list(map(str, SETTING_COMBOS["ticks"])))
         self.tick_combo.setCurrentText(
             str(settings["services"]["com"]["tick"]))
         self.tick_combo.currentTextChanged.connect(self.update_tick)
