@@ -53,6 +53,7 @@ class _SysInfoItem(QWidget):
 
         self.data_label = QLabel(str(data))
         self.data_label.setStyleSheet("font-weight: bold;")
+        self.data_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.layout.addWidget(self.data_label)
 
 
