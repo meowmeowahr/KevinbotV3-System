@@ -64,6 +64,10 @@ def map_range(value, in_min, in_max, out_min, out_max):
                       * (out_max - out_min))
 
 
+def split_string(s: str, n: int):
+    return [s[i:i+n] for i in range(0, len(s), n)]
+
+
 def speak_festival(text):
     os.system('echo "{}" | festival --tts'.format(text.replace("Kevinbot",
                                                                "Kevinbought")))
@@ -76,19 +80,34 @@ def get_uptime():
     return uptime_seconds
 
 
-def data_to_remote(data):
+def data_to_remote(data: str):
     xbee.send("tx", dest_addr=b'\x00\x00',
               data=bytes("{}".format(data), 'utf-8'))
 
 
+def data_to_core(data: str):
+    p2_ser.write(data.encode("utf-8"))
+
+
 def recv_loop():
     while True:
-        data = p2_ser.readline().decode().strip("\n")
+        try:
+            data = p2_ser.readline().decode().strip("\n")
+        except UnicodeError as e:
+            data = ""
+            logger.error(f"Got {repr(e)} when processing data")
+
         line: List[Any] = data.split("=")
-        print(line)
 
         if line[0] == "bms.voltages":
             line[1] = line[1].split(",")
+
+            if not line[1][0].isdigit():
+                logger.warning(f"Got non-digit value for bms.voltages(0), {line[1][0]}")
+                continue
+            elif not line[1][1].isdigit():
+                logger.warning(f"Got non-digit value for bms.voltages(1), {line[1][1]}")
+                continue
 
             current_state.sensors["batts"][0] = float(line[1][0]) / 10
             current_state.sensors["batts"][1] = float(line[1][1]) / 10
@@ -119,15 +138,8 @@ def recv_loop():
                                     \nVoltage: {float(line[1][1]) / 10}V",
                                     "-u", "critical", "-t", "0"])
                     current_state.battery_notifications_displayed[1] = True
-        elif line[0] == "robot.disable":
-            enabled = not line[1].lower() in ["true", "t"]
-            logger.info(f"Enabled: {enabled}")
-        elif line[0] == "alive":
-            # System Tick
-            publish(settings["services"]["com"]
-                    ["topic-core-uptime"], line[1])
-            if settings["services"]["com"]["tick"].lower() == "core":
-                tick()
+        elif line[0] == "system.enable":
+            request_system_enable(line[1].lower() in ["true", "t"])
         elif line[0] == "connection.requesthandshake":
             logger.warning("Handshake requested")
             perform_core_handshake()
@@ -151,36 +163,57 @@ def tick():
 
 
 def begin_remote_handshake(uid: str):
+    logger.info(f"Remote ({uid}) handshake started")
     data_to_remote(f"handshake.start={uid}")
     data_to_remote(f"core.enabled={current_state.enabled}")
     data_to_remote(f"core.speech-engine={current_state.speech_engine}")
     transmit_full_remote_list()
     data_to_remote(f"handshake.end={uid}")
+    logger.success(f"Remote ({uid}) handshake ended")
 
 
-def request_system_enable(ena: bool):
-    enabled = ena
-    logger.info(f"Enabled: {enabled}")
-    p2_ser.write("head_effect=color1\n".encode("utf-8"))
-    p2_ser.write("body_effect=color1\n".encode("utf-8"))
-    p2_ser.write("base_effect=color1\n".encode("utf-8"))
-    p2_ser.write("head_color1=000000\n".encode("utf-8"))
-    p2_ser.write("body_color1=000000\n".encode("utf-8"))
-    p2_ser.write("base_color1=000000\n".encode("utf-8"))
-    data_to_remote(f"core.enabled={enabled}")
+def e_stop(power_off: bool = False):
+    data_to_core("system.estop\n")
+    data_to_remote("system.estop")
+    request_system_enable(False)
+    if power_off:
+        time.sleep(1)
+        subprocess.run(["systemctl", "poweroff"])
+
+
+def request_system_e_stop():
+    e_stop(False)
+
+
+def request_system_enable(ena: bool, sound: bool = True):
+    if not ena == current_state.enabled:
+        current_state.enabled = ena
+        logger.info(f"Enabled: {current_state.enabled}")
+        data_to_core(f"system.enabled={int(ena)}\n")
+        print("core", f"system.enabled={int(ena)}\n")
+
+        if not ena:
+            # On disable
+            p2_ser.write("head_effect=color1\n".encode("utf-8"))
+            p2_ser.write("body_effect=color1\n".encode("utf-8"))
+            p2_ser.write("base_effect=color1\n".encode("utf-8"))
+            p2_ser.write("head_color1=000000\n".encode("utf-8"))
+            p2_ser.write("body_color1=000000\n".encode("utf-8"))
+            p2_ser.write("base_color1=000000\n".encode("utf-8"))
+
+        data_to_remote(f"core.enabled={current_state.enabled}")
+        if sound:
+            playsound.playsound(os.path.join(os.curdir,
+                                             "sounds/enable.wav"), False)
 
 
 def transmit_full_remote_list():
-    mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"]
-    mesh = ",".join(mesh + current_state.connected_remotes)
-    mesh = [mesh[i:i + settings["services"]["data_max"]]
-            for i in range(0, len(mesh),
-                           settings["services"]["data_max"])]
-    for count, part in enumerate(mesh):
+    mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"] + current_state.connected_remotes
+    data = split_string(",".join(mesh), settings["services"]["data_max"])
+
+    for count, part in enumerate(data):
         data_to_remote(f"core.full_mesh:{count}:"
-                       f"{len(mesh) - 1}={mesh[count]}")
-        print(f"core.full_mesh:{count}:"
-              f"{len(mesh) - 1}={','.join(mesh)}")
+                       f"{len(data) - 1}={data[count]}")
 
 
 def remote_recv_loop():
@@ -190,9 +223,6 @@ def remote_recv_loop():
 
             if data["id"] == "status":
                 logger.warning("Got XBee Status msg: %s", data["status"])
-
-            if (not data['rf_data'].decode().startswith('core')) and current_state.enabled:
-                p2_ser.write(data['rf_data'])
 
             raw = data['rf_data'].decode().strip("\r\n")
             data = data['rf_data'].decode().strip("\r\n").split('=', 1)
@@ -206,16 +236,18 @@ def remote_recv_loop():
                         maxsplit=1)[1] +
                      "\n").encode("UTF-8"))
             elif data[0] == "core.speech":
+                data_to_remote("remote.disableui=True")
                 if current_state.speech_engine == "festival":
                     speak_festival(data[1].strip("\r\n"))
                 elif current_state.speech_engine == "espeak":
                     espeak_engine.say(data[1].strip("\r\n"))
                     espeak_engine.runAndWait()
+                    print("here")
+                data_to_remote("remote.disableui=False")
             elif data[0] == "core.speech-engine":
                 current_state.speech_engine = data[1].strip("\r\n")
-            elif data[0] == "robot.disable":
-                current_state.enabled = not data[1].lower() in ["true", "t"]
-                p2_ser.write("stop".encode("UTF-8"))
+            elif data[0] == "request.estop":
+                request_system_e_stop()
             elif data[0] == "request.enabled":
                 enabled = data[1].lower() in ["true", "t"]
                 request_system_enable(enabled)
@@ -246,8 +278,8 @@ def remote_recv_loop():
                     subprocess.run(
                         ["notify-send", "Ping!",
                          f"Ping from {data[1].split(',')[1]}"])
-            elif data[0] == "shutdown":
-                subprocess.run(["systemctl", "poweroff"])
+            else:
+                data_to_core(f"{data[0]}={data[1]}\n")
         except Exception as e:
             request_system_enable(False)
             logger.error(f"Exception in Remote Loop: {e}")
@@ -312,6 +344,8 @@ def perform_core_handshake():
             p2_ser.write("core.errors.clear\n".encode("utf-8"))
             p2_ser.write("connection.ok\n".encode("utf-8"))
             logger.success("Core is connected")
+            logger.info("Reset battery notifications")
+            current_state.battery_notifications_displayed = [False, False]
             break
         time.sleep(0.1)
 

@@ -12,6 +12,9 @@ from KevinbotUI import KBTheme
 import theme_control
 import desktop_widgets
 
+from kevinbot_qt_mqtt import MqttClient
+from system_options import BROKER, PORT
+
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'widgets.json')
 
@@ -52,6 +55,11 @@ class DockWindow(QMainWindow):
         self.setWindowOpacity(0.8)
         self.setFixedWidth(280)
 
+        self.client = MqttClient()
+        self.client.hostname = BROKER
+        self.client.port = PORT
+        self.client.connectToHost()
+
         self.reposition_timer = QTimer()
 
         self.screen = app.primaryScreen()
@@ -80,7 +88,7 @@ class DockWindow(QMainWindow):
         self.root_layout.addStretch()
 
         for item in settings["order"]:
-            widget = WIDGET_TYPES[item["type"]](data=item)
+            widget = WIDGET_TYPES[item["type"]](data=item, mqtt_client=self.client)
             widget.up_button.clicked.connect(
                 functools.partial(self.move_widget_up, widget))
             widget.down_button.clicked.connect(

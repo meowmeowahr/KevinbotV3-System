@@ -118,7 +118,7 @@ class SysInfoPanel(QScrollArea):
 
     name = "System Info"
 
-    def __init__(self, parent):
+    def __init__(self, _):
         super().__init__()
 
         self.setObjectName("Kevinbot3_SettingsPanel_Panel")
@@ -197,7 +197,7 @@ class SysInfoPanel(QScrollArea):
 class CommsPanel(QScrollArea):
     name = "Communication"
 
-    def __init__(self, parent):
+    def __init__(self, _):
         super().__init__()
 
         self.setObjectName("Kevinbot3_SettingsPanel_Panel")
@@ -348,7 +348,7 @@ class CommsPanel(QScrollArea):
 class ServicesPanel(QScrollArea):
     name = "Services"
 
-    def __init__(self, parent):
+    def __init__(self, _):
         super().__init__()
 
         self.setObjectName("Kevinbot3_SettingsPanel_Panel")

@@ -25,7 +25,7 @@ TOPIC_TEMP = settings["services"]["bme"]["topic-temp"]
 TOPIC_HUMI = settings["services"]["bme"]["topic-humidity"]
 TOPIC_PRESSURE = settings["services"]["bme"]["topic-pressure"]
 
-USING_BATT_2 = False
+USING_BATT_2 = settings["battery"]["enable_two"]
 BATT_LOW_VOLT = 90
 
 SETTING_COMBOS = {

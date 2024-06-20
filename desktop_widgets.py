@@ -1,9 +1,9 @@
+from typing import Any
+
 from qtpy.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
-                             QLabel, QLayout)
+                            QLabel, QLayout)
 from qtpy.QtCore import Qt, QSize, QTimer
 import qtawesome as qta
-
-from paho.mqtt import client as mqtt_client
 
 from KevinbotUI import KBTheme
 import theme_control
@@ -12,53 +12,21 @@ import os
 import uuid
 import json
 import datetime
-import threading
 
+from kevinbot_qt_mqtt import MqttClient
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
 
 settings = json.load(open(SETTINGS_PATH, 'r'))
 
-BROKER = settings["services"]["mqtt"]["address"]
-PORT = settings["services"]["mqtt"]["port"]
-CLI_ID = f'kevinbot-widgets-{uuid.uuid4()}'
-
-
-def on_mqtt_message(client, userdata, msg):
-    if settings["services"]["com"]["topic-enabled"] in msg.topic:
-        _SystemStates.enabled = msg.payload.decode().lower() == "true"
-    elif settings["services"]["com"]["topic-batt1"] in msg.topic:
-        _SystemStates.batt1_voltage = float(msg.payload.decode())
-    elif settings["services"]["com"]["topic-batt2"] in msg.topic:
-        _SystemStates.batt2_voltage = float(msg.payload.decode())
-
-
-def mqtt_loop():
-    # mqtt
-    client = mqtt_client.Client(CLI_ID)
-    client.on_message = on_mqtt_message
-    client.connect(BROKER, PORT)
-    client.subscribe(settings["services"]["com"]["topic-enabled"])
-    client.subscribe(settings["services"]["com"]["topic-batt1"])
-    client.subscribe(settings["services"]["com"]["topic-batt2"])
-    client.loop_forever()
-
-
-mqtt_thread = threading.Thread(target=mqtt_loop, daemon=True)
-mqtt_thread.start()
-
-
-class _SystemStates:
-    enabled = False
-    batt1_voltage = 0
-    batt2_voltage = 0
-
 
 class BaseWidget(QFrame):
-    def __init__(self, add=False,
-                 data={"type": "base", "uuid": str(uuid.uuid4())}):
+    def __init__(self, add=False, data: dict[str, Any] | None = None, mqtt_client: MqttClient | None = None):
         super().__init__()
+        if data is None:
+            data: dict[str, Any] = {"type": "base", "uuid": str(uuid.uuid4())}
+        self.mqtt_client = mqtt_client
         self.data = data
         self.add = add
 
@@ -112,13 +80,13 @@ class BaseWidget(QFrame):
 
         self._root_layout.addStretch()
 
-    def setTitle(self, title: str):
+    def set_title(self, title: str):
         self.title.setText(title)
 
-    def setData(self, data: any):
+    def set_data(self, data: any):
         self.data = data
 
-    def addLayout(self, layout: QLayout):
+    def add_layout(self, layout: QLayout):
         self._root_layout.addLayout(layout)
         self._root_layout.addStretch()
 
@@ -129,14 +97,14 @@ class ClockWidget(BaseWidget):
         self.data["type"] = "clock"
 
         if self.add:
-            self.setTitle("12-Hour Clock")
+            self.set_title("12-Hour Clock")
         else:
-            self.setTitle("Clock")
+            self.set_title("Clock")
 
         self.setFixedHeight(200)
 
         self.layout = QVBoxLayout()
-        self.addLayout(self.layout)
+        self.add_layout(self.layout)
 
         self.time = QLabel("??:?? ??")
         self.time.setStyleSheet("font-size: 48px;")
@@ -166,14 +134,14 @@ class Clock24Widget(BaseWidget):
         self.data["type"] = "clock24"
 
         if self.add:
-            self.setTitle("24-Hour Clock")
+            self.set_title("24-Hour Clock")
         else:
-            self.setTitle("Clock")
+            self.set_title("Clock")
 
         self.setFixedHeight(200)
 
         self.layout = QVBoxLayout()
-        self.addLayout(self.layout)
+        self.add_layout(self.layout)
 
         self.time = QLabel("??:??:??")
         self.time.setStyleSheet("font-size: 48px;")
@@ -201,17 +169,22 @@ class EnaWidget(BaseWidget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.data["type"] = "enable"
-        self.setTitle("Robot Status")
+        self.set_title("Robot Status")
+
+        if self.mqtt_client:
+            self.mqtt_client.subscribe(settings["services"]["com"]["topic-enabled"])
+            self.mqtt_client.messageSignal.connect(self.message_slot)
 
         if "speed" not in self.data:
             self.data["speed"] = 400
 
+        self.enabled = False
         self.light_on = False
 
         self.setFixedHeight(180)
 
         self.layout = QVBoxLayout()
-        self.addLayout(self.layout)
+        self.add_layout(self.layout)
 
         self.pulser = QFrame()
         self.pulser.setFixedHeight(64)
@@ -230,7 +203,7 @@ class EnaWidget(BaseWidget):
             self.timer.start()
 
     def pulse(self):
-        if _SystemStates.enabled:
+        if self.enabled:
             self.text.setText("Enabled")
             self.light_on = not self.light_on
             if self.light_on:
@@ -241,12 +214,24 @@ class EnaWidget(BaseWidget):
             self.text.setText("Disabled")
             self.pulser.setStyleSheet("background-color: #4CAF50;")
 
+    def message_slot(self, topic: str, payload: str):
+        if settings["services"]["com"]["topic-enabled"] in topic:
+            self.enabled = payload.lower() == "true"
+
 
 class BattWidget(BaseWidget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.batt1_voltage = 0
+        self.batt2_voltage = 0
+
         self.data["type"] = "batt"
-        self.setTitle("Battery Status")
+        self.set_title("Battery Status")
+
+        if self.mqtt_client:
+            self.mqtt_client.subscribe(settings["services"]["com"]["topic-batt1"])
+            self.mqtt_client.subscribe(settings["services"]["com"]["topic-batt2"])
+            self.mqtt_client.messageSignal.connect(self.message_slot)
 
         if "update" not in self.data:
             self.data["update"] = 2000
@@ -256,7 +241,7 @@ class BattWidget(BaseWidget):
         self.setFixedHeight(120)
 
         self.layout = QVBoxLayout()
-        self.addLayout(self.layout)
+        self.add_layout(self.layout)
 
         if self.data["b2"]:
             self.b1 = QLabel("Battery #1 Voltage: ??")
@@ -268,21 +253,20 @@ class BattWidget(BaseWidget):
             self.b1 = QLabel("Battery Voltage: ??")
             self.layout.addWidget(self.b1)
 
-        if not self.add:
-            self.timer = QTimer()
-            self.timer.setInterval(self.data["update"])
-            self.timer.timeout.connect(self.update_voltage)
-            self.timer.start()
+    def message_slot(self, topic: str, payload: str):
+        if settings["services"]["com"]["topic-batt1"] in topic:
+            self.batt1_voltage = float(payload)
+        elif settings["services"]["com"]["topic-batt2"] in topic:
+            self.batt2_voltage = float(payload)
 
-    def update_voltage(self):
         if self.data["b2"]:
             self.b1.setText(f"Battery #1 Voltage: \
-                            <b>{_SystemStates.batt1_voltage}v</b>")
+                            <b>{self.batt1_voltage}v</b>")
             self.b2.setText(f"Battery #2 Voltage: \
-                            <b>{_SystemStates.batt2_voltage}v</b>")
+                            <b>{self.batt2_voltage}v</b>")
         else:
             self.b1.setText(f"Battery Voltage: \
-                            <b>{_SystemStates.batt1_voltage}v</b>")
+                            <b>{self.batt1_voltage}v</b>")
 
 
 class EmptyWidget(QFrame):
@@ -307,10 +291,10 @@ class EmptyWidget(QFrame):
         self.label = QLabel("There are no widgets in the dock")
         self._root_layout.addWidget(self.label)
 
-    def setTitle(self, title: str):
+    def set_title(self, title: str):
         self.label.setText(title)
 
-    def setData(self, data: any):
+    def set_data(self, data: any):
         self.data = data
 
 
