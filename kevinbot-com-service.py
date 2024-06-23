@@ -1,3 +1,4 @@
+import logging
 import traceback
 from typing import Any, Final, List
 from dataclasses import dataclass
@@ -131,7 +132,7 @@ def recv_loop():
 
             if int(line[1][1]) < BATT_LOW_VOLT and USING_BATT_2:
                 playsound.playsound(os.path.join(os.curdir,
-                                                 "sounds/low-battery.mp3"))
+                                                 "sounds/low-battery.mp3"), block=False)
                 if not current_state.battery_notifications_displayed[1]:
                     subprocess.run(["notify-send", "Kevinbot System",
                                     f"Battery #2 is critically low. \
@@ -367,6 +368,7 @@ if __name__ == "__main__":
     # logging
     logger.remove()
     logger.add(sys.stderr, level=settings["logging"]["level"])
+    logging.basicConfig(level=settings["logging"]["level"])
 
     # serial
     xb_ser = serial.Serial(XB_SERIAL_PORT, baudrate=XB_BAUD_RATE)
