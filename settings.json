@@ -6,7 +6,7 @@
         "page": 4
     },
     "logging": {
-        "level": 10
+        "level": 0
     },
     "battery" : {
         "enable_two": true,

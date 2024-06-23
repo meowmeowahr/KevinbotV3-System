@@ -48,6 +48,7 @@ CLI_ID: Final = f'kevinbot-com-service-{uuid.uuid4()}'
 @dataclass
 class CurrentStateManager:
     enabled: bool = False
+    error: int = 0
     speech_engine: str = "espeak"
     last_alive_msg: datetime.datetime = dataclass_field(default_factory=lambda: datetime.datetime.now())
     core_alive: bool = True
@@ -99,6 +100,7 @@ def recv_loop():
             logger.error(f"Got {repr(e)} when processing data")
 
         line: List[Any] = data.split("=")
+        logger.trace(f"Data from Kevinbot Core - {data}")
 
         if line[0] == "bms.voltages":
             line[1] = line[1].split(",")
@@ -139,8 +141,15 @@ def recv_loop():
                                     \nVoltage: {float(line[1][1]) / 10}V",
                                     "-u", "critical", "-t", "0"])
                     current_state.battery_notifications_displayed[1] = True
+
+            data_to_remote(data)
         elif line[0] == "system.enable":
             request_system_enable(line[1].lower() in ["true", "t"])
+        elif line[0] == "core.error":
+            if not line[1].isdigit():
+                logger.warning(f"Got non-digit value for core.error(0), {line[1]}")
+                continue
+            current_state.error = int(line[1])
         elif line[0] == "connection.requesthandshake":
             logger.warning("Handshake requested")
             perform_core_handshake()
@@ -187,6 +196,10 @@ def request_system_e_stop():
 
 
 def request_system_enable(ena: bool, sound: bool = True):
+    if current_state.error:
+        data_to_remote(f"core.enablefailed={int(ena)}")
+        return
+
     if not ena == current_state.enabled:
         current_state.enabled = ena
         logger.info(f"Enabled: {current_state.enabled}")
