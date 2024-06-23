@@ -52,6 +52,8 @@ class CurrentStateManager:
     speech_engine: str = "espeak"
     last_alive_msg: datetime.datetime = dataclass_field(default_factory=lambda: datetime.datetime.now())
     core_alive: bool = True
+    core_uptime: int = 0
+    core_uptime_ms: int = 0
     battery_notifications_displayed: list[bool] = dataclass_field(default_factory=lambda: [False, False])
     connected_remotes: list[str] = dataclass_field(default_factory=list)
     sensors: dict = dataclass_field(default_factory=lambda: {
@@ -150,6 +152,13 @@ def recv_loop():
                 logger.warning(f"Got non-digit value for core.error(0), {line[1]}")
                 continue
             current_state.error = int(line[1])
+        elif line[0] == "core.uptime":
+            if not line[1].isdigit():
+                logger.warning(f"Got non-digit value for core.uptime(0), {line[1]}")
+                continue
+
+            current_state.core_uptime = int(line[1])
+            data_to_remote(data)
         elif line[0] == "connection.requesthandshake":
             logger.warning("Handshake requested")
             perform_core_handshake()
