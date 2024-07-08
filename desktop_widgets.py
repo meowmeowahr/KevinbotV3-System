@@ -236,15 +236,13 @@ class BattWidget(BaseWidget):
 
         if "update" not in self.data:
             self.data["update"] = 2000
-        if "b2" not in self.data:
-            self.data["b2"] = False
 
         self.setFixedHeight(120)
 
         self.layout = QVBoxLayout()
         self.add_layout(self.layout)
 
-        if self.data["b2"]:
+        if settings.battery.enable_two:
             self.b1 = QLabel("Battery #1 Voltage: ??")
             self.layout.addWidget(self.b1)
 
@@ -260,7 +258,7 @@ class BattWidget(BaseWidget):
         elif settings.services.com.topic_batt2 in topic:
             self.batt2_voltage = float(payload)
 
-        if self.data["b2"]:
+        if settings.battery.enable_two:
             self.b1.setText(f"Battery #1 Voltage: \
                             <b>{self.batt1_voltage}v</b>")
             self.b2.setText(f"Battery #2 Voltage: \
