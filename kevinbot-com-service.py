@@ -21,28 +21,14 @@ from paho.mqtt import client as mqtt_client
 
 from xbee import XBee
 
-from system_options import (
-    settings,
-    TOPIC_HUMI,
-    TOPIC_PRESSURE,
-    TOPIC_TEMP,
-    TOPIC_YAW,
-    TOPIC_PITCH,
-    TOPIC_ROLL,
-    P2_SERIAL_PORT,
-    XB_SERIAL_PORT,
-    HEAD_SERIAL_PORT,
-    P2_BAUD_RATE,
-    XB_BAUD_RATE,
-    HEAD_BAUD_RATE,
-    BATT_LOW_VOLT,
-    USING_BATT_2,
-    BROKER,
-    PORT)
+from settings import SettingsManager
 
 __version__ = "1.0.0"
 
 CLI_ID: Final = f'kevinbot-com-service-{uuid.uuid4()}'
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
+settings = SettingsManager(SETTINGS_PATH)
 
 
 @dataclass
@@ -118,13 +104,13 @@ def recv_loop():
             current_state.sensors["batts"][1] = float(line[1][1]) / 10
             if client:
                 client.publish(
-                    settings["services"]["com"]["topic-batt1"],
+                    settings.services.com.topic_batt1,
                     current_state.sensors["batts"][0])
                 client.publish(
-                    settings["services"]["com"]["topic-batt2"],
+                    settings.services.com.topic_batt2,
                     current_state.sensors["batts"][1])
 
-            if int(line[1][0]) < BATT_LOW_VOLT:
+            if int(line[1][0]) < settings.battery.warn_voltages[0]:
                 playsound.playsound(os.path.join(os.curdir,
                                                  "sounds/low-battery.mp3"), False)
                 if not current_state.battery_notifications_displayed[0]:
@@ -134,7 +120,7 @@ def recv_loop():
                                     "-u", "critical", "-t", "0"])
                     current_state.battery_notifications_displayed[0] = True
 
-            if int(line[1][1]) < BATT_LOW_VOLT and USING_BATT_2:
+            if int(line[1][1]) < settings.battery.warn_voltages[1] and settings.battery.enable_two:
                 playsound.playsound(os.path.join(os.curdir,
                                                  "sounds/low-battery.mp3"), block=False)
                 if not current_state.battery_notifications_displayed[1]:
@@ -177,8 +163,8 @@ def head_recv_loop():
 def tick():
     data_to_remote(f"os_uptime={round(get_uptime())}")
     p2_ser.write("system.tick\n".encode("utf-8"))
-    publish(settings["services"]["com"]["topic-sys-uptime"], get_uptime())
-    publish(settings["services"]["com"]["topic-enabled"], current_state.enabled)
+    publish(settings.services.com.topic_sys_uptime, get_uptime())
+    publish(settings.services.com.topic_enabled, current_state.enabled)
 
 
 def begin_remote_handshake(uid: str):
@@ -232,7 +218,7 @@ def request_system_enable(ena: bool, sound: bool = True):
 
 def transmit_full_remote_list():
     mesh = [f"KEVINBOTV3|{__version__}|kevinbot.kevinbot"] + current_state.connected_remotes
-    data = split_string(",".join(mesh), settings["services"]["data_max"])
+    data = split_string(",".join(mesh), settings.services.com.data_max)
 
     for count, part in enumerate(data):
         data_to_remote(f"core.full_mesh:{count}:"
@@ -318,21 +304,21 @@ def on_connect(cli, userdata, flags, rc):
 
 
 def on_message(cli, userdata, msg):
-    if TOPIC_ROLL in msg.topic:
+    if settings.services.mpu.topic_roll in msg.topic:
         current_state.sensors["mpu"][0] = float(msg.payload.decode())
-    elif TOPIC_PITCH in msg.topic:
+    elif settings.services.mpu.topic_pitch in msg.topic:
         current_state.sensors["mpu"][1] = float(msg.payload.decode())
-    elif TOPIC_YAW in msg.topic:
+    elif settings.services.mpu.topic_yaw in msg.topic:
         current_state.sensors["mpu"][2] = float(msg.payload.decode())
         data_to_remote(
             f"imu={current_state.sensors['mpu'][0]},"
             f"{current_state.sensors['mpu'][1]},"
             f"{current_state.sensors['mpu'][2]}")
-    elif TOPIC_TEMP in msg.topic:
+    elif settings.services.bme.topic_temp in msg.topic:
         current_state.sensors["bme"][0] = float(msg.payload.decode())
-    elif TOPIC_HUMI in msg.topic:
+    elif settings.services.bme.topic_humidity in msg.topic:
         current_state.sensors["bme"][1] = float(msg.payload.decode())
-    elif TOPIC_PRESSURE in msg.topic:
+    elif settings.services.bme.topic_pressure in msg.topic:
         current_state.sensors["bme"][2] = float(msg.payload.decode())
         data_to_remote(f"bme={current_state.sensors['bme'][0]},"
                        f"{round(float(current_state.sensors['bme'][0]) * 1.8 + 32, 2)},"
@@ -347,12 +333,11 @@ def publish(topic, msg):
 
 
 def tick_loop():
-    if settings["services"]["com"]["tick"].lower() == "core":
+    if settings.services.com.tick.lower() == "core":
         return
 
     while True:
-        time.sleep(float(settings["services"]["com"]
-                         ["tick"].lower().strip("s")))
+        time.sleep(float(settings.services.com.tick.lower().strip("s")))
         tick()
 
 
@@ -389,16 +374,16 @@ if __name__ == "__main__":
 
     # logging
     logger.remove()
-    logger.add(sys.stderr, level=settings["logging"]["level"])
-    logging.basicConfig(level=settings["logging"]["level"])
+    logger.add(sys.stderr, level=settings.logging.level)
+    logging.basicConfig(level=settings.logging.level)
 
     # serial
-    xb_ser = serial.Serial(XB_SERIAL_PORT, baudrate=XB_BAUD_RATE)
+    xb_ser = serial.Serial(settings.services.serial.xb_port, baudrate=settings.services.serial.xb_baud)
     xbee = XBee(xb_ser, escaped=False)
 
-    p2_ser = serial.Serial(P2_SERIAL_PORT, baudrate=P2_BAUD_RATE)
+    p2_ser = serial.Serial(settings.services.serial.p2_port, baudrate=settings.services.serial.p2_baud)
 
-    head_ser = serial.Serial(HEAD_SERIAL_PORT, baudrate=HEAD_BAUD_RATE)
+    head_ser = serial.Serial(settings.services.serial.head_port, baudrate=settings.services.serial.head_baud)
 
     # speech
     espeak_engine = pyttsx3.init("espeak")
@@ -407,13 +392,13 @@ if __name__ == "__main__":
     client = mqtt_client.Client(CLI_ID)
     client.on_connect = on_connect
     client.on_message = on_message
-    client.connect(BROKER, PORT)
-    client.subscribe(TOPIC_ROLL)
-    client.subscribe(TOPIC_PITCH)
-    client.subscribe(TOPIC_YAW)
-    client.subscribe(TOPIC_TEMP)
-    client.subscribe(TOPIC_HUMI)
-    client.subscribe(TOPIC_PRESSURE)
+    client.connect(settings.services.mqtt.address, settings.services.mqtt.port)
+    client.subscribe(settings.services.mpu.topic_roll)
+    client.subscribe(settings.services.mpu.topic_pitch)
+    client.subscribe(settings.services.mpu.topic_yaw)
+    client.subscribe(settings.services.bme.topic_temp)
+    client.subscribe(settings.services.bme.topic_humidity)
+    client.subscribe(settings.services.bme.topic_pressure)
 
     # hold up until core is ready
     logger.info("Waiting for core connection")
