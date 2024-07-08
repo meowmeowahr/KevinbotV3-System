@@ -15,10 +15,11 @@ import datetime
 
 from kevinbot_qt_mqtt import MqttClient
 
+from settings import SettingsManager
+
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
-
-settings = json.load(open(SETTINGS_PATH, 'r'))
+settings = SettingsManager(SETTINGS_PATH)
 
 
 class BaseWidget(QFrame):
@@ -172,7 +173,7 @@ class EnaWidget(BaseWidget):
         self.set_title("Robot Status")
 
         if self.mqtt_client:
-            self.mqtt_client.subscribe(settings["services"]["com"]["topic-enabled"])
+            self.mqtt_client.subscribe(settings.services.com.topic_enabled)
             self.mqtt_client.messageSignal.connect(self.message_slot)
 
         if "speed" not in self.data:
@@ -215,7 +216,7 @@ class EnaWidget(BaseWidget):
             self.pulser.setStyleSheet("background-color: #4CAF50;")
 
     def message_slot(self, topic: str, payload: str):
-        if settings["services"]["com"]["topic-enabled"] in topic:
+        if settings.services.com.topic_enabled in topic:
             self.enabled = payload.lower() == "true"
 
 
@@ -229,8 +230,8 @@ class BattWidget(BaseWidget):
         self.set_title("Battery Status")
 
         if self.mqtt_client:
-            self.mqtt_client.subscribe(settings["services"]["com"]["topic-batt1"])
-            self.mqtt_client.subscribe(settings["services"]["com"]["topic-batt2"])
+            self.mqtt_client.subscribe(settings.services.com.topic_batt1)
+            self.mqtt_client.subscribe(settings.services.com.topic_batt2)
             self.mqtt_client.messageSignal.connect(self.message_slot)
 
         if "update" not in self.data:
@@ -254,9 +255,9 @@ class BattWidget(BaseWidget):
             self.layout.addWidget(self.b1)
 
     def message_slot(self, topic: str, payload: str):
-        if settings["services"]["com"]["topic-batt1"] in topic:
+        if settings.services.com.topic_batt1 in topic:
             self.batt1_voltage = float(payload)
-        elif settings["services"]["com"]["topic-batt2"] in topic:
+        elif settings.services.com.topic_batt2 in topic:
             self.batt2_voltage = float(payload)
 
         if self.data["b2"]:
