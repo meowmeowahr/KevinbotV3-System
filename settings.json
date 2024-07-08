@@ -10,7 +10,8 @@
     },
     "battery" : {
         "enable_two": true,
-        "severity": [false, true]
+        "cutoff_voltages": [8.0, 16.8],
+        "warn_voltages": [10.5, 17.2]
     },
     "services": {
         "mqtt": {
@@ -31,7 +32,8 @@
             "topic-batt2": "kevinbot/battery/batt2",
             "topic-sys-uptime": "kevinbot/uptimes/os",
             "topic-core-uptime": "kevinbot/uptimes/core",
-            "topic-enabled": "kevinbot/enabled"
+            "topic-enabled": "kevinbot/enabled",
+            "data_max": 50
         },
         "mpu": {
             "enabled": true,
@@ -46,7 +48,6 @@
             "topic-temp": "kevinbot/bme/temperature",
             "topic-humidity": "kevinbot/bme/humidity",
             "topic-pressure": "kevinbot/bme/pressure"
-        },
-        "data_max": 50
+        }
     }
 }
