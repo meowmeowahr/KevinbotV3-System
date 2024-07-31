@@ -19,8 +19,10 @@ import pyttsx3
 import serial
 from paho.mqtt import client as mqtt_client
 
-from xbee import XBee
+from command_queue import CommandQueue, CommandQueueOptions
 
+from remote_interface import RemoteInterface, RemoteCommand
+from robot_commands import SpeechCommand
 from settings import SettingsManager
 
 __version__ = "1.0.0"
@@ -56,12 +58,7 @@ def map_range(value, in_min, in_max, out_min, out_max):
 
 
 def split_string(s: str, n: int):
-    return [s[i:i+n] for i in range(0, len(s), n)]
-
-
-def speak_festival(text):
-    os.system('echo "{}" | festival --tts'.format(text.replace("Kevinbot",
-                                                               "Kevinbought")))
+    return [s[i:i + n] for i in range(0, len(s), n)]
 
 
 def get_uptime():
@@ -69,11 +66,6 @@ def get_uptime():
         uptime_seconds = float(f.readline().split()[0])
 
     return uptime_seconds
-
-
-def data_to_remote(data: str):
-    xbee.send("tx", dest_addr=b'\x00\x00',
-              data=bytes("{}".format(data), 'utf-8'))
 
 
 def data_to_core(data: str):
@@ -148,7 +140,7 @@ def recv_loop():
                                     "-u", "critical", "-t", "0"])
                     current_state.battery_notifications_displayed[1] = True
 
-            data_to_remote(data)
+            remote.send(data)
         elif line[0] == "system.enable":
             request_system_enable(line[1].lower() in ["true", "t"])
         elif line[0] == "core.error":
@@ -162,7 +154,7 @@ def recv_loop():
                 continue
 
             current_state.core_uptime = int(line[1])
-            data_to_remote(data)
+            remote.send(data)
         elif line[0] == "connection.requesthandshake":
             logger.warning("Handshake requested")
             perform_core_handshake()
@@ -175,11 +167,11 @@ def head_recv_loop():
     while True:
         data = head_ser.readline().decode("UTF-8")
         if data.startswith("eye_settings."):
-            data_to_remote(data)
+            remote.send(data)
 
 
 def tick():
-    data_to_remote(f"os_uptime={round(get_uptime())}")
+    remote.send(f"os_uptime={round(get_uptime())}")
     p2_ser.write("system.tick\n".encode("utf-8"))
     publish(settings.services.com.topic_sys_uptime, get_uptime())
     publish(settings.services.com.topic_enabled, current_state.enabled)
@@ -187,17 +179,17 @@ def tick():
 
 def begin_remote_handshake(uid: str):
     logger.info(f"Remote ({uid}) handshake started")
-    data_to_remote(f"handshake.start={uid}")
-    data_to_remote(f"core.enabled={current_state.enabled}")
-    data_to_remote(f"core.speech-engine={current_state.speech_engine}")
+    remote.send(f"connection.handshake.start={uid}")
+    remote.send(f"kevinbot.enabled={current_state.enabled}")
+    remote.send(f"system.speechEngine={current_state.speech_engine}")
     transmit_full_remote_list()
-    data_to_remote(f"handshake.end={uid}")
+    remote.send(f"connection.handshake.end={uid}")
     logger.success(f"Remote ({uid}) handshake ended")
 
 
 def e_stop(power_off: bool = False):
     data_to_core("system.estop\n")
-    data_to_remote("system.estop")
+    remote.send("system.estop")
     request_system_enable(False)
     if power_off:
         time.sleep(1)
@@ -210,7 +202,7 @@ def request_system_e_stop():
 
 def request_system_enable(ena: bool, sound: bool = True):
     if current_state.error:
-        data_to_remote(f"core.enablefailed={int(ena)}")
+        remote.send(f"kevinbot.enableFailed={int(ena)}")
         return
 
     if not ena == current_state.enabled:
@@ -228,7 +220,7 @@ def request_system_enable(ena: bool, sound: bool = True):
             p2_ser.write("body_color1=000000\n".encode("utf-8"))
             p2_ser.write("base_color1=000000\n".encode("utf-8"))
 
-        data_to_remote(f"core.enabled={current_state.enabled}")
+        remote.send(f"core.enabled={current_state.enabled}")
         if sound:
             playsound.playsound(os.path.join(os.curdir,
                                              "sounds/enable.wav"), False)
@@ -239,74 +231,66 @@ def transmit_full_remote_list():
     data = split_string(",".join(mesh), settings.services.com.data_max)
 
     for count, part in enumerate(data):
-        data_to_remote(f"core.full_mesh:{count}:"
-                       f"{len(data) - 1}={data[count]}")
+        remote.send(f"system.remotes.list:{count}:"
+                    f"{len(data) - 1}={data[count]}")
 
 
 def remote_recv_loop():
     while True:
         try:
-            data = xbee.wait_read_frame()
-
-            if data["id"] == "status":
-                logger.warning("Got XBee Status msg: %s", data["status"])
-
-            raw = data['rf_data'].decode().strip("\r\n")
-            data = data['rf_data'].decode().strip("\r\n").split('=', 1)
-
+            data = remote.get()
             print(data)
 
-            if data[0].startswith("eye."):
-                head_ser.write(
-                    (raw.split(
-                        ".",
-                        maxsplit=1)[1] +
-                     "\n").encode("UTF-8"))
-            elif data[0] == "core.speech":
-                data_to_remote("remote.disableui=True")
-                if current_state.speech_engine == "festival":
-                    speak_festival(data[1].strip("\r\n"))
-                elif current_state.speech_engine == "espeak":
-                    espeak_engine.say(data[1].strip("\r\n"))
-                    espeak_engine.runAndWait()
-                    print("here")
-                data_to_remote("remote.disableui=False")
-            elif data[0] == "core.speech-engine":
-                current_state.speech_engine = data[1].strip("\r\n")
-            elif data[0] == "request.estop":
-                request_system_e_stop()
-            elif data[0] == "request.enabled":
-                enabled = data[1].lower() in ["true", "t"]
-                request_system_enable(enabled)
-            elif data[0] == "core.remotes.add":
-                if not data[1] in current_state.connected_remotes:
-                    current_state.connected_remotes.append(data[1])
-                    logger.info(f"Wireless device connected: {data[1]}")
+            if data["status"] == "no_rf_data":
+                logger.warning("XBee frame contains no data")
+
+            command: RemoteCommand = data["command"]
+            value: str = data["value"]
+
+            # if data[0].startswith("eye."):
+            #     head_ser.write(
+            #         (raw.split(
+            #             ".",
+            #             maxsplit=1)[1] +
+            #          "\n").encode("UTF-8"))
+            if command == RemoteCommand.SpeechSpeak:
+                command_queue.add_command(SpeechCommand(value, current_state.speech_engine))
+            elif command == RemoteCommand.SpeechEngine:
+                current_state.speech_engine = value
+            # elif data[0] == "request.estop":
+            #     request_system_e_stop()
+            # elif data[0] == "request.enabled":
+            #     enabled = data[1].lower() in ["true", "t"]
+            #     request_system_enable(enabled)
+            elif command == RemoteCommand.RemoteListAdd:
+                if value not in current_state.connected_remotes:
+                    current_state.connected_remotes.append(value)
+                    logger.info(f"Wireless device connected: {value}")
                     logger.info(f"Total devices: {current_state.connected_remotes}")
-                begin_remote_handshake(data[1].split("|")[0])
-            elif data[0] == "core.remotes.remove":
-                if data[1] in current_state.connected_remotes:
-                    current_state.connected_remotes.remove(data[1])
-                    logger.info(f"Wireless device disconnected: {data[1]}")
-                logger.info(f"Total devices: {current_state.connected_remotes}")
-            elif data[0] == "core.remotes.get_full":
-                transmit_full_remote_list()
-            elif data[0] == "core.ping":
-                if data[1].split(",")[0] == "KEVINBOTV3":
-                    threading.Thread(
-                        target=playsound.playsound,
-                        args=(
-                            os.path.join(
-                                os.curdir,
-                                "sounds/device-notify.wav"),
-                        ),
-                        daemon=True).start()
-                    logger.info(f"Ping from {data[1].split(',')[1]}")
-                    subprocess.run(
-                        ["notify-send", "Ping!",
-                         f"Ping from {data[1].split(',')[1]}"])
-            else:
-                data_to_core(f"{data[0]}={data[1]}\n")
+                begin_remote_handshake(value.split("|")[0])
+            # elif data[0] == "core.remotes.remove":
+            #     if data[1] in current_state.connected_remotes:
+            #         current_state.connected_remotes.remove(data[1])
+            #         logger.info(f"Wireless device disconnected: {data[1]}")
+            #     logger.info(f"Total devices: {current_state.connected_remotes}")
+            # elif data[0] == "core.remotes.get_full":
+            #     transmit_full_remote_list()
+            # elif data[0] == "core.ping":
+            #     if data[1].split(",")[0] == "KEVINBOTV3":
+            #         threading.Thread(
+            #             target=playsound.playsound,
+            #             args=(
+            #                 os.path.join(
+            #                     os.curdir,
+            #                     "sounds/device-notify.wav"),
+            #             ),
+            #             daemon=True).start()
+            #         logger.info(f"Ping from {data[1].split(',')[1]}")
+            #         subprocess.run(
+            #             ["notify-send", "Ping!",
+            #              f"Ping from {data[1].split(',')[1]}"])
+            # else:
+            #     data_to_core(f"{data[0]}={data[1]}\n")
         except Exception as e:
             request_system_enable(False)
             logger.error(f"Exception in Remote Loop: {e}")
@@ -328,7 +312,7 @@ def on_message(cli, userdata, msg):
         current_state.sensors["mpu"][1] = float(msg.payload.decode())
     elif settings.services.mpu.topic_yaw in msg.topic:
         current_state.sensors["mpu"][2] = float(msg.payload.decode())
-        data_to_remote(
+        remote.send(
             f"imu={current_state.sensors['mpu'][0]},"
             f"{current_state.sensors['mpu'][1]},"
             f"{current_state.sensors['mpu'][2]}")
@@ -338,9 +322,9 @@ def on_message(cli, userdata, msg):
         current_state.sensors["bme"][1] = float(msg.payload.decode())
     elif settings.services.bme.topic_pressure in msg.topic:
         current_state.sensors["bme"][2] = float(msg.payload.decode())
-        data_to_remote(f"bme={current_state.sensors['bme'][0]},"
-                       f"{round(float(current_state.sensors['bme'][0]) * 1.8 + 32, 2)},"
-                       f"{current_state.sensors['bme'][1]},{current_state.sensors['bme'][2]}")
+        remote.send(f"bme={current_state.sensors['bme'][0]},"
+                    f"{round(float(current_state.sensors['bme'][0]) * 1.8 + 32, 2)},"
+                    f"{current_state.sensors['bme'][1]},{current_state.sensors['bme'][2]}")
 
 
 def publish(topic, msg):
@@ -396,15 +380,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=settings.logging.level)
 
     # serial
-    xb_ser = serial.Serial(settings.services.serial.xb_port, baudrate=settings.services.serial.xb_baud)
-    xbee = XBee(xb_ser, escaped=False)
-
+    remote = RemoteInterface(settings.services.serial.xb_port, settings.services.serial.xb_baud)
     p2_ser = serial.Serial(settings.services.serial.p2_port, baudrate=settings.services.serial.p2_baud)
-
     head_ser = serial.Serial(settings.services.serial.head_port, baudrate=settings.services.serial.head_baud)
-
-    # speech
-    espeak_engine = pyttsx3.init("espeak")
 
     # mqtt
     client = mqtt_client.Client(CLI_ID)
@@ -436,9 +414,13 @@ if __name__ == "__main__":
     tick_thread = threading.Thread(target=tick_loop, daemon=True)
     tick_thread.start()
 
+    # command queue
+    command_queue = CommandQueue()
+    command_queue.run_in_background(100)
+
     # init
-    data_to_remote("core.service.init=kevinbot.com")
-    data_to_remote("core.enabled=False")
+    remote.send("core.service.init=kevinbot.com")
+    remote.send("core.enabled=False")
 
     logger.success("Comms are up!")
 
