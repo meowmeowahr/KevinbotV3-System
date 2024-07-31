@@ -19,6 +19,7 @@ import json
 import psutil
 import os
 import platform
+import string
 
 from system_options import SETTING_COMBOS
 
@@ -35,7 +36,7 @@ def save_json():
 
 def detect_model() -> str:
     with open('/proc/device-tree/model') as f:
-        model = f.read()
+        model = "".join(filter(lambda x: x in string.printable, f.read()))
     return model
 
 
