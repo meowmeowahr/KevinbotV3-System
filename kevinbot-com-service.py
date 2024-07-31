@@ -41,6 +41,7 @@ class CurrentStateManager:
     core_uptime: int = 0
     core_uptime_ms: int = 0
     battery_notifications_displayed: list[bool] = dataclass_field(default_factory=lambda: [False, False])
+    battery_sound_played: list[bool] = dataclass_field(default_factory=lambda: [False, False])
     connected_remotes: list[str] = dataclass_field(default_factory=list)
     sensors: dict = dataclass_field(default_factory=lambda: {
         "batts": [-1, -1],
@@ -111,21 +112,38 @@ def recv_loop():
                     current_state.sensors["batts"][1])
 
             if int(line[1][0]) < settings.battery.warn_voltages[0]:
-                playsound.playsound(os.path.join(os.curdir,
-                                                 "sounds/low-battery.mp3"), False)
+                if settings.battery.warn_sound == "repeat":
+                    playsound.playsound(os.path.join(os.curdir,
+                                                     "sounds/low-battery.mp3"), block=False)
+                elif settings.battery.warn_sound == "never":
+                    pass
+                else:
+                    if not current_state.battery_sound_played[0]:
+                        playsound.playsound(os.path.join(os.curdir,
+                                                         "sounds/low-battery.mp3"), block=False)
+                        current_state.battery_sound_played[0] = True
                 if not current_state.battery_notifications_displayed[0]:
                     subprocess.run(["notify-send", "Kevinbot System",
-                                    f"Battery #1 is critically low. \
+                                    f"Battery #1 is low. \
                                     \nVoltage: {float(line[1][0]) / 10}V",
                                     "-u", "critical", "-t", "0"])
                     current_state.battery_notifications_displayed[0] = True
 
             if int(line[1][1]) < settings.battery.warn_voltages[1] and settings.battery.enable_two:
-                playsound.playsound(os.path.join(os.curdir,
-                                                 "sounds/low-battery.mp3"), block=False)
+                if settings.battery.warn_sound == "repeat":
+                    playsound.playsound(os.path.join(os.curdir,
+                                                     "sounds/low-battery.mp3"), block=False)
+                elif settings.battery.warn_sound == "never":
+                    pass
+                else:
+                    if not current_state.battery_sound_played[1]:
+                        playsound.playsound(os.path.join(os.curdir,
+                                                         "sounds/low-battery.mp3"), block=False)
+                        current_state.battery_sound_played[1] = True
+
                 if not current_state.battery_notifications_displayed[1]:
                     subprocess.run(["notify-send", "Kevinbot System",
-                                    f"Battery #2 is critically low. \
+                                    f"Battery #2 is low. \
                                     \nVoltage: {float(line[1][1]) / 10}V",
                                     "-u", "critical", "-t", "0"])
                     current_state.battery_notifications_displayed[1] = True

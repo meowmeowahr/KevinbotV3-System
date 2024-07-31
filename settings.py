@@ -1,7 +1,7 @@
 # Kevinbot Settings Manager
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 
 
 class _SysInfo:
@@ -24,6 +24,7 @@ class _Battery:
         self.enable_two: bool = data.get("enable_two", True)
         self.cutoff_voltages: List[float] = data.get("cutoff_voltages", [8.0, 16.8])
         self.warn_voltages: List[float] = data.get("warn_voltages", [10.5, 17.2])
+        self.warn_sound: Literal["repeat", "once", "never"] | str = data.get("warn_sound", "once")
 
 
 class _MQTT:

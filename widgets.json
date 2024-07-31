@@ -17,6 +17,10 @@
         {
             "type": "clock",
             "uuid": "b84c0e2d-62cd-4ba9-b1e6-444d1ff0618a"
+        },
+        {
+            "type": "clock24",
+            "uuid": "9021950c-b829-4db1-b67a-89282af1d0d9"
         }
     ]
 }
