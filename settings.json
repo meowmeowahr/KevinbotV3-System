@@ -3,15 +3,21 @@
         "interval": 2
     },
     "settings": {
-        "page": 4
+        "page": 1
     },
     "logging": {
         "level": 0
     },
-    "battery" : {
+    "battery": {
         "enable_two": true,
-        "cutoff_voltages": [8.0, 16.8],
-        "warn_voltages": [10.5, 17.2],
+        "cutoff_voltages": [
+            8.0,
+            16.8
+        ],
+        "warn_voltages": [
+            10.5,
+            17.2
+        ],
         "warn_sound": "once"
     },
     "services": {
