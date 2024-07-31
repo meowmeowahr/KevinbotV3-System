@@ -17,6 +17,7 @@ class RemoteCommand(enum.StrEnum):
     Ping = "connection.ping"
 
     RequestEnable = "kevinbot.request.enable"
+    RequestEstop = "kevinbot.request.estop"
 
     ArmPosition = "arms.position"
 
@@ -65,14 +66,19 @@ class RemoteInterface:
     def get(self) -> dict:
         data = self.xbee.wait_read_frame()
 
-        logger.trace(f"Got XBee frame {data}")
+        logger.log("DATA", f"Got XBee frame {data}")
 
         if "rf_data" not in data.keys():
             return {"raw": "".encode("utf-8"), "status": "no_rf_data", "command": RemoteCommand.NoCommand, "value": ""}
 
         cv = data['rf_data'].decode().strip("\r\n").split('=', 1)
 
-        return {"raw": data['rf_data'], "status": "ok", "command": RemoteCommand(cv[0]), "value": cv[1]}
+        if len(cv) == 1:
+            value = ""
+        else:
+            value = cv[1]
+
+        return {"raw": data['rf_data'], "status": "ok", "command": RemoteCommand(cv[0]), "value": value}
 
     def send(self, data: str):
         self.xbee.send("tx", dest_addr=b'\x00\x00',

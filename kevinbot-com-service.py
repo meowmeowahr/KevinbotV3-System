@@ -12,17 +12,17 @@ import threading
 import sys
 import uuid
 
+from command_queue.commands import FunctionCommand
 from loguru import logger
 
 import playsound
-import pyttsx3
 import serial
 from paho.mqtt import client as mqtt_client
 
 from command_queue import CommandQueue, CommandQueueOptions
 
 from remote_interface import RemoteInterface, RemoteCommand
-from robot_commands import SpeechCommand
+from robot_commands import SpeechCommand, RemoteHandshakeCommand, RobotRequestEnableCommand, RobotRequestEstopCommand
 from settings import SettingsManager
 
 __version__ = "1.0.0"
@@ -72,6 +72,10 @@ def data_to_core(data: str):
     p2_ser.write(data.encode("utf-8"))
 
 
+def set_enabled(ena: bool):
+    current_state.enabled = ena
+
+
 def recv_loop():
     while True:
         try:
@@ -81,7 +85,7 @@ def recv_loop():
             logger.error(f"Got {repr(e)} when processing data")
 
         line: List[Any] = data.split("=")
-        logger.trace(f"Data from Kevinbot Core - {data}")
+        logger.log("DATA", f"Data from Kevinbot Core - {data}")
 
         if line[0] == "bms.voltages":
             line[1] = line[1].split(",")
@@ -142,7 +146,11 @@ def recv_loop():
 
             remote.send(data)
         elif line[0] == "system.enable":
-            request_system_enable(line[1].lower() in ["true", "t"])
+            command_queue.add_command(RobotRequestEnableCommand(line[1].lower() in ["true", "t"],
+                                                                p2_ser,
+                                                                remote,
+                                                                current_state))
+            command_queue.add_command(FunctionCommand(lambda: set_enabled(line[1].lower() in ["true", "t"])))
         elif line[0] == "core.error":
             if not line[1].isdigit():
                 logger.warning(f"Got non-digit value for core.error(0), {line[1]}")
@@ -158,7 +166,11 @@ def recv_loop():
         elif line[0] == "connection.requesthandshake":
             logger.warning("Handshake requested")
             perform_core_handshake()
-            request_system_enable(False)
+            command_queue.add_command(RobotRequestEnableCommand(False,
+                                                                p2_ser,
+                                                                remote,
+                                                                current_state))
+            command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
 
         # TODO: Re-tx data to remote
 
@@ -171,59 +183,10 @@ def head_recv_loop():
 
 
 def tick():
-    remote.send(f"os_uptime={round(get_uptime())}")
+    remote.send(f"system.uptime={round(get_uptime())}")
     p2_ser.write("system.tick\n".encode("utf-8"))
     publish(settings.services.com.topic_sys_uptime, get_uptime())
     publish(settings.services.com.topic_enabled, current_state.enabled)
-
-
-def begin_remote_handshake(uid: str):
-    logger.info(f"Remote ({uid}) handshake started")
-    remote.send(f"connection.handshake.start={uid}")
-    remote.send(f"kevinbot.enabled={current_state.enabled}")
-    remote.send(f"system.speechEngine={current_state.speech_engine}")
-    transmit_full_remote_list()
-    remote.send(f"connection.handshake.end={uid}")
-    logger.success(f"Remote ({uid}) handshake ended")
-
-
-def e_stop(power_off: bool = False):
-    data_to_core("system.estop\n")
-    remote.send("system.estop")
-    request_system_enable(False)
-    if power_off:
-        time.sleep(1)
-        subprocess.run(["systemctl", "poweroff"])
-
-
-def request_system_e_stop():
-    e_stop(False)
-
-
-def request_system_enable(ena: bool, sound: bool = True):
-    if current_state.error:
-        remote.send(f"kevinbot.enableFailed={int(ena)}")
-        return
-
-    if not ena == current_state.enabled:
-        current_state.enabled = ena
-        logger.info(f"Enabled: {current_state.enabled}")
-        data_to_core(f"system.enabled={int(ena)}\n")
-        print("core", f"system.enabled={int(ena)}\n")
-
-        if not ena:
-            # On disable
-            p2_ser.write("head_effect=color1\n".encode("utf-8"))
-            p2_ser.write("body_effect=color1\n".encode("utf-8"))
-            p2_ser.write("base_effect=color1\n".encode("utf-8"))
-            p2_ser.write("head_color1=000000\n".encode("utf-8"))
-            p2_ser.write("body_color1=000000\n".encode("utf-8"))
-            p2_ser.write("base_color1=000000\n".encode("utf-8"))
-
-        remote.send(f"core.enabled={current_state.enabled}")
-        if sound:
-            playsound.playsound(os.path.join(os.curdir,
-                                             "sounds/enable.wav"), False)
 
 
 def transmit_full_remote_list():
@@ -239,7 +202,6 @@ def remote_recv_loop():
     while True:
         try:
             data = remote.get()
-            print(data)
 
             if data["status"] == "no_rf_data":
                 logger.warning("XBee frame contains no data")
@@ -254,45 +216,55 @@ def remote_recv_loop():
             #             maxsplit=1)[1] +
             #          "\n").encode("UTF-8"))
             if command == RemoteCommand.SpeechSpeak:
-                command_queue.add_command(SpeechCommand(value, current_state.speech_engine))
+                if current_state.enabled:
+                    command_queue.add_command(SpeechCommand(value, current_state.speech_engine))
             elif command == RemoteCommand.SpeechEngine:
                 current_state.speech_engine = value
-            # elif data[0] == "request.estop":
-            #     request_system_e_stop()
-            # elif data[0] == "request.enabled":
-            #     enabled = data[1].lower() in ["true", "t"]
-            #     request_system_enable(enabled)
+            elif command == RemoteCommand.RequestEstop:
+                command_queue.add_command(RobotRequestEstopCommand(p2_ser, remote, current_state))
+            elif command == RemoteCommand.RequestEnable:
+                enabled = value.lower() in ["true", "t"]
+                command_queue.add_command(RobotRequestEnableCommand(enabled,
+                                                                    p2_ser,
+                                                                    remote,
+                                                                    current_state))
+                command_queue.add_command(FunctionCommand(lambda: set_enabled(enabled)))
             elif command == RemoteCommand.RemoteListAdd:
                 if value not in current_state.connected_remotes:
                     current_state.connected_remotes.append(value)
                     logger.info(f"Wireless device connected: {value}")
                     logger.info(f"Total devices: {current_state.connected_remotes}")
-                begin_remote_handshake(value.split("|")[0])
-            # elif data[0] == "core.remotes.remove":
-            #     if data[1] in current_state.connected_remotes:
-            #         current_state.connected_remotes.remove(data[1])
-            #         logger.info(f"Wireless device disconnected: {data[1]}")
-            #     logger.info(f"Total devices: {current_state.connected_remotes}")
-            # elif data[0] == "core.remotes.get_full":
-            #     transmit_full_remote_list()
-            # elif data[0] == "core.ping":
-            #     if data[1].split(",")[0] == "KEVINBOTV3":
-            #         threading.Thread(
-            #             target=playsound.playsound,
-            #             args=(
-            #                 os.path.join(
-            #                     os.curdir,
-            #                     "sounds/device-notify.wav"),
-            #             ),
-            #             daemon=True).start()
-            #         logger.info(f"Ping from {data[1].split(',')[1]}")
-            #         subprocess.run(
-            #             ["notify-send", "Ping!",
-            #              f"Ping from {data[1].split(',')[1]}"])
+                command_queue.add_command(
+                    RemoteHandshakeCommand(remote, value.split("|")[0], __version__, current_state))
+            elif command == RemoteCommand.RemoteListRemove:
+                if value in current_state.connected_remotes:
+                    current_state.connected_remotes.remove(value)
+                    logger.info(f"Wireless device disconnected: {value}")
+                logger.info(f"Total devices: {current_state.connected_remotes}")
+            elif command == RemoteCommand.RemoteListFetch:
+                transmit_full_remote_list()
+            elif command == RemoteCommand.Ping:
+                if data[1].split(",")[0] == "KEVINBOTV3":
+                    threading.Thread(
+                        target=playsound.playsound,
+                        args=(
+                            os.path.join(
+                                os.curdir,
+                                "sounds/device-notify.wav"),
+                        ),
+                        daemon=True).start()
+                    logger.info(f"Ping from {data[1].split(',')[1]}")
+                    subprocess.run(
+                        ["notify-send", "Ping!",
+                         f"Ping from {data[1].split(',')[1]}"])
             # else:
             #     data_to_core(f"{data[0]}={data[1]}\n")
         except Exception as e:
-            request_system_enable(False)
+            command_queue.add_command(RobotRequestEnableCommand(False,
+                                                                p2_ser,
+                                                                remote,
+                                                                current_state))
+            command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
             logger.error(f"Exception in Remote Loop: {e}")
             traceback.print_exc()
 
@@ -376,6 +348,7 @@ if __name__ == "__main__":
 
     # logging
     logger.remove()
+    logger.level("DATA", no=4, color="<magenta>", icon="<>")
     logger.add(sys.stderr, level=settings.logging.level)
     logging.basicConfig(level=settings.logging.level)
 
