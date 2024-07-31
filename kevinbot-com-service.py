@@ -184,7 +184,7 @@ def head_recv_loop():
 
 def tick():
     remote.send(f"system.uptime={round(get_uptime())}")
-    p2_ser.write("system.tick\n".encode("utf-8"))
+    p2_ser.write("core.tick\n".encode("utf-8"))
     publish(settings.services.com.topic_sys_uptime, get_uptime())
     publish(settings.services.com.topic_enabled, current_state.enabled)
 
