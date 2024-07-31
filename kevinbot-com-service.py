@@ -257,8 +257,6 @@ def remote_recv_loop():
                     subprocess.run(
                         ["notify-send", "Ping!",
                          f"Ping from {data[1].split(',')[1]}"])
-            # else:
-            #     data_to_core(f"{data[0]}={data[1]}\n")
         except Exception as e:
             command_queue.add_command(RobotRequestEnableCommand(False,
                                                                 p2_ser,
