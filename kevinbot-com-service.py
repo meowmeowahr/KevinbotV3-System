@@ -24,7 +24,7 @@ from command_queue import CommandQueue, CommandQueueOptions
 
 from remote_interface import RemoteInterface, RemoteCommand
 from robot_commands import SpeechCommand, RemoteHandshakeCommand, RobotRequestEnableCommand, RobotRequestEstopCommand, \
-    RobotArmCommand
+    RobotArmCommand, CoreSerialCommand
 from settings import SettingsManager
 
 __version__ = "1.0.0"
@@ -53,6 +53,12 @@ class CurrentStateManager:
         "mpu": [0, 0, 0],
         "bme": [0, 0, 0],
     })
+    lighting_head_update: int = dataclass_field(default_factory = lambda: settings.lighting.head.update)
+    lighting_head_brightness: int = dataclass_field(default_factory = lambda: settings.lighting.head.brightness)
+    lighting_body_update: int = dataclass_field(default_factory = lambda: settings.lighting.body.update)
+    lighting_body_brightness: int = dataclass_field(default_factory = lambda: settings.lighting.body.brightness)
+    lighting_base_update: int = dataclass_field(default_factory = lambda: settings.lighting.base.update)
+    lighting_base_brightness: int = dataclass_field(default_factory = lambda: settings.lighting.base.brightness)
 
 
 def map_range(value, in_min, in_max, out_min, out_max):
@@ -232,6 +238,55 @@ def remote_recv_loop():
                                  if key not in previous_servos or previous_servos[key] != current_state.servos[key]}
                 for change in new_positions:
                     p2_ser.write(f"s={change},{new_positions[change]}\n".encode("utf-8"))
+            elif command == RemoteCommand.LightingHeadEffect:
+                command_queue.add_command(CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadEffect.value}={value}\n"))
+            elif command == RemoteCommand.LightingHeadColor1:
+                command_queue.add_command(CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor1.value}={value}\n"))
+            elif command == RemoteCommand.LightingHeadColor2:
+                command_queue.add_command(CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor2.value}={value}\n"))
+            elif command == RemoteCommand.LightingHeadUpdateSpeed:
+                current_state.lighting_head_update = int(value)
+                command_queue.add_command(CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadUpdateSpeed.value}={value}\n"))
+            elif command == RemoteCommand.LightingHeadBright:
+                current_state.lighting_head_brightness = int(value)
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadBright.value}={value}\n"))
+            elif command == RemoteCommand.LightingBodyEffect:
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyEffect.value}={value}\n"))
+            elif command == RemoteCommand.LightingBodyColor1:
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyColor1.value}={value}\n"))
+            elif command == RemoteCommand.LightingBodyColor2:
+                current_state.lighting_body_brightness = int(value)
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyColor2.value}={value}\n"))
+            elif command == RemoteCommand.LightingBodyUpdateSpeed:
+                current_state.lighting_body_update = int(value)
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyUpdateSpeed.value}={value}\n"))
+            elif command == RemoteCommand.LightingBodyBright:
+                current_state.lighting_body_brightness = int(value)
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyBright.value}={value}\n"))
+            elif command == RemoteCommand.LightingBaseEffect:
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseEffect.value}={value}\n"))
+            elif command == RemoteCommand.LightingBaseColor1:
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseColor1.value}={value}\n"))
+            elif command == RemoteCommand.LightingBaseColor2:
+                current_state.lighting_base_brightness = int(value)
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseColor2.value}={value}\n"))
+            elif command == RemoteCommand.LightingBaseUpdateSpeed:
+                current_state.lighting_base_update = int(value)
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseUpdateSpeed.value}={value}\n"))
+            elif command == RemoteCommand.LightingBaseBright:
+                current_state.lighting_base_brightness = int(value)
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseBright.value}={value}\n"))
             elif command == RemoteCommand.SpeechEngine:
                 current_state.speech_engine = value
             elif command == RemoteCommand.RequestEstop:

@@ -51,6 +51,12 @@ class RemoteHandshakeCommand(_BaseCommand):
         self.interface.send(f"connection.handshake.start={self.uid}")
         self.interface.send(f"kevinbot.enabled={self.current_state.enabled}")
         self.interface.send(f"system.speechEngine={self.current_state.speech_engine}")
+        self.interface.send(f"lighting.head.update={self.current_state.lighting_head_update}")
+        self.interface.send(f"lighting.head.bright={self.current_state.lighting_head_brightness}")
+        self.interface.send(f"lighting.body.update={self.current_state.lighting_body_update}")
+        self.interface.send(f"lighting.body.bright={self.current_state.lighting_body_brightness}")
+        self.interface.send(f"lighting.base.update={self.current_state.lighting_base_update}")
+        self.interface.send(f"lighting.base.bright={self.current_state.lighting_base_brightness}")
 
         mesh = [f"KEVINBOTV3|{self.version}|kevinbot.kevinbot"] + self.current_state.connected_remotes
         data = split_string(",".join(mesh), settings.services.com.data_max)
@@ -138,3 +144,9 @@ class RobotArmCommand(_BaseCommand):
     def _run(self):
         for port, position in (zip(self.ports, self.positions)):
             self.core.write(f"s={port},{position}\n".encode("utf-8"))
+
+
+class CoreSerialCommand(_BaseCommand):
+    def __init__(self, core: serial.Serial, command: str):
+        super().__init__()
+        self._command = lambda: core.write(command.encode("utf-8"))

@@ -38,6 +38,19 @@ class _Battery:
         self.warn_sound: Literal["repeat", "once", "never"] | str = data.get("warn_sound", "once")
 
 
+class _LightingSection:
+    def __init__(self, data: Dict[str, Any]):
+        self.update: int = data.get("update", 200)
+        self.brightness: int = data.get("brightness", 120)
+
+
+class _Lighting:
+    def __init__(self, data: Dict[str, Any]):
+        self.head: _LightingSection | None = _LightingSection(data.get("head"))
+        self.body: _LightingSection | None = _LightingSection(data.get("body"))
+        self.base: _LightingSection | None = _LightingSection(data.get("base"))
+
+
 class _MQTT:
     def __init__(self, data: Dict[str, Any]):
         self.port: int = data.get("port", 1883)
@@ -97,6 +110,7 @@ class SettingsManager:
         self.services: _Services | None = None
         self.servo: _Servos | None = None
         self.battery: _Battery | None = None
+        self.lighting: _Lighting | None = None
         self.logging: _Logging | None = None
         self.settings_gui: _Settings | None = None
         self.sysinfo: _SysInfo | None = None
@@ -111,6 +125,7 @@ class SettingsManager:
             "logging": self.logging.__dict__,
             "servos": self.servo.__dict__,
             "battery": self.battery.__dict__,
+            "lighting": self.lighting.__dict__,
             "services": {
                 "mqtt": self.services.mqtt.__dict__,
                 "serial": self.services.serial.__dict__,
@@ -131,6 +146,7 @@ class SettingsManager:
         self.logging = _Logging(data.get("logging", {}))
         self.servo = _Servos(data.get("servos", {}))
         self.battery = _Battery(data.get("battery", {}))
+        self.lighting = _Lighting(data.get("lighting", {}))
         self.services = _Services(data.get("services", {}))
 
     def save(self) -> None:

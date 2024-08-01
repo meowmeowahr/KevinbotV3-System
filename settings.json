@@ -44,6 +44,20 @@
         ],
         "warn_sound": "once"
     },
+    "lighting": {
+        "head": {
+            "update": 200,
+            "brightness": 120
+        },
+        "body": {
+            "update": 200,
+            "brightness": 120
+        },
+        "base": {
+            "update": 200,
+            "brightness": 120
+        }
+    },
     "services": {
         "mqtt": {
             "port": 1883,

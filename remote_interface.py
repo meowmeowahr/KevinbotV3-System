@@ -36,6 +36,9 @@ class RemoteCommand(enum.StrEnum):
     LightingHeadUpdateSpeed = "lighting.head.update"
     LightingBodyUpdateSpeed = "lighting.body.update"
     LightingBaseUpdateSpeed = "lighting.base.update"
+    LightingHeadBright = "lighting.head.bright"
+    LightingBodyBright = "lighting.body.bright"
+    LightingBaseBright = "lighting.base.bright"
     LightingCameraBrightness = "lighting.camera.brightness"
 
     EyeFetchSettings = "eyes.getSettings"
@@ -65,7 +68,6 @@ class RemoteInterface:
 
     def get(self) -> dict:
         data = self.xbee.wait_read_frame()
-        print("got data")
 
         logger.log("DATA", f"Got XBee frame {data}")
 
