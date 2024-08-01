@@ -50,6 +50,7 @@ class CurrentStateManager:
     servos: dict = dataclass_field(default_factory=dict)
     sensors: dict = dataclass_field(default_factory=lambda: {
         "batts": [-1, -1],
+        "temps": [-1, -1, -1],
         "mpu": [0, 0, 0],
         "bme": [0, 0, 0],
     })
@@ -180,8 +181,9 @@ def recv_loop():
                                                                 remote,
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
-
-        # TODO: Re-tx data to remote
+        elif line[0] == "sensors.temps":
+            current_state.sensors["temps"] = list(map(lambda x: int(x)/100, line[1].split(",")))
+            remote.send(f"sensors.temps={','.join(list(map(str, current_state.sensors['temps'])))}")
 
 
 def head_recv_loop():
