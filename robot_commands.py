@@ -125,3 +125,16 @@ class RobotRequestEstopCommand(_BaseCommand):
             self.core.flush()
             self.remote.serial.flush()
             subprocess.run(["systemctl", "poweroff"])
+
+
+class RobotArmCommand(_BaseCommand):
+    def __init__(self, core: serial.Serial, positions: list[int], arm_ports: list[int]):
+        super().__init__()
+        self.core = core
+        self.positions = positions
+        self.ports = arm_ports
+        self._command = self._run
+
+    def _run(self):
+        for port, position in (zip(self.ports, self.positions)):
+            self.core.write(f"s={port},{position}\n".encode("utf-8"))

@@ -1,4 +1,5 @@
 import logging
+import random
 import traceback
 from typing import Any, Final, List
 from dataclasses import dataclass
@@ -22,7 +23,8 @@ from paho.mqtt import client as mqtt_client
 from command_queue import CommandQueue, CommandQueueOptions
 
 from remote_interface import RemoteInterface, RemoteCommand
-from robot_commands import SpeechCommand, RemoteHandshakeCommand, RobotRequestEnableCommand, RobotRequestEstopCommand
+from robot_commands import SpeechCommand, RemoteHandshakeCommand, RobotRequestEnableCommand, RobotRequestEstopCommand, \
+    RobotArmCommand
 from settings import SettingsManager
 
 __version__ = "1.0.0"
@@ -45,10 +47,11 @@ class CurrentStateManager:
     battery_notifications_displayed: list[bool] = dataclass_field(default_factory=lambda: [False, False])
     battery_sound_played: list[bool] = dataclass_field(default_factory=lambda: [False, False])
     connected_remotes: list[str] = dataclass_field(default_factory=list)
+    servos: dict = dataclass_field(default_factory=dict)
     sensors: dict = dataclass_field(default_factory=lambda: {
         "batts": [-1, -1],
         "mpu": [0, 0, 0],
-        "bme": [0, 0, 0]
+        "bme": [0, 0, 0],
     })
 
 
@@ -201,14 +204,15 @@ def transmit_full_remote_list():
 def remote_recv_loop():
     while True:
         try:
-            data = remote.get()
+            data = remote.get() # {"command": "arms.positions", "value": f"{','.join([str(random.randint(0,180)) for _ in range(14)])}"}
+            times = [time.time_ns()]
 
             if data["status"] == "no_rf_data":
                 logger.warning("XBee frame contains no data")
 
             command: RemoteCommand = data["command"]
             value: str = data["value"]
-
+            times.append(time.time_ns())
             # if data[0].startswith("eye."):
             #     head_ser.write(
             #         (raw.split(
@@ -218,6 +222,16 @@ def remote_recv_loop():
             if command == RemoteCommand.SpeechSpeak:
                 if current_state.enabled:
                     command_queue.add_command(SpeechCommand(value, current_state.speech_engine))
+            elif command == RemoteCommand.ArmPositions:
+                previous_servos = current_state.servos.copy()
+                positions = list(map(int, value.split(",")))
+                for port, position in (zip(arm_ports, positions)):
+                    current_state.servos[port] = position
+                # get differences between previous and current positions
+                new_positions = {key: current_state.servos[key] for key in current_state.servos
+                                 if key not in previous_servos or previous_servos[key] != current_state.servos[key]}
+                for change in new_positions:
+                    p2_ser.write(f"s={change},{new_positions[change]}\n".encode("utf-8"))
             elif command == RemoteCommand.SpeechEngine:
                 current_state.speech_engine = value
             elif command == RemoteCommand.RequestEstop:
@@ -244,7 +258,7 @@ def remote_recv_loop():
             elif command == RemoteCommand.RemoteListFetch:
                 transmit_full_remote_list()
             elif command == RemoteCommand.Ping:
-                if data[1].split(",")[0] == "KEVINBOTV3":
+                if value.split(",")[0] == "KEVINBOTV3":
                     threading.Thread(
                         target=playsound.playsound,
                         args=(
@@ -257,6 +271,9 @@ def remote_recv_loop():
                     subprocess.run(
                         ["notify-send", "Ping!",
                          f"Ping from {data[1].split(',')[1]}"])
+
+            times.append(time.time_ns())
+            # print("time", [t-times[0] for t in times])
         except Exception as e:
             command_queue.add_command(RobotRequestEnableCommand(False,
                                                                 p2_ser,
@@ -351,9 +368,14 @@ if __name__ == "__main__":
     logging.basicConfig(level=settings.logging.level)
 
     # serial
-    remote = RemoteInterface(settings.services.serial.xb_port, settings.services.serial.xb_baud)
+    remote = RemoteInterface(settings.services.serial.xb_port, settings.services.serial.xb_baud, escaped=True)
     p2_ser = serial.Serial(settings.services.serial.p2_port, baudrate=settings.services.serial.p2_baud)
     head_ser = serial.Serial(settings.services.serial.head_port, baudrate=settings.services.serial.head_baud)
+
+    # arms
+    arm_ports = []
+    for port in range(len(settings.servo.mappings["arms"] )):
+        arm_ports.append(settings.servo.mappings["arms"][str(port)])
 
     # mqtt
     client = mqtt_client.Client(CLI_ID)

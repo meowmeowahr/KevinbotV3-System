@@ -19,6 +19,17 @@ class _Logging:
         self.level: int = data.get("level", 0)
 
 
+class _ServoMappings:
+    def __init__(self, data: Dict[str, Any]):
+        self.arms: dict | None = data.get("arms")
+        self.head: dict | None = data.get("head")
+
+
+class _Servos:
+    def __init__(self, data: Dict[str, Any]):
+        self.mappings: _ServoMappings | None = data.get("mappings")
+
+
 class _Battery:
     def __init__(self, data: Dict[str, Any]):
         self.enable_two: bool = data.get("enable_two", True)
@@ -84,6 +95,7 @@ class _Services:
 class SettingsManager:
     def __init__(self, filepath: str = 'settings.json'):
         self.services: _Services | None = None
+        self.servo: _Servos | None = None
         self.battery: _Battery | None = None
         self.logging: _Logging | None = None
         self.settings_gui: _Settings | None = None
@@ -97,6 +109,7 @@ class SettingsManager:
             "sysinfo": self.sysinfo.__dict__,
             "settings": self.settings_gui.__dict__,
             "logging": self.logging.__dict__,
+            "servos": self.servo.__dict__,
             "battery": self.battery.__dict__,
             "services": {
                 "mqtt": self.services.mqtt.__dict__,
@@ -116,6 +129,7 @@ class SettingsManager:
         self.sysinfo = _SysInfo(data.get("sysinfo", {}))
         self.settings_gui = _Settings(data.get("settings", {}))
         self.logging = _Logging(data.get("logging", {}))
+        self.servo = _Servos(data.get("servos", {}))
         self.battery = _Battery(data.get("battery", {}))
         self.services = _Services(data.get("services", {}))
 

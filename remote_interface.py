@@ -19,7 +19,7 @@ class RemoteCommand(enum.StrEnum):
     RequestEnable = "kevinbot.request.enable"
     RequestEstop = "kevinbot.request.estop"
 
-    ArmPosition = "arms.position"
+    ArmPositions = "arms.positions"
 
     SpeechEngine = "system.speechEngine"
     SpeechSpeak = "system.speak"
@@ -65,6 +65,7 @@ class RemoteInterface:
 
     def get(self) -> dict:
         data = self.xbee.wait_read_frame()
+        print("got data")
 
         logger.log("DATA", f"Got XBee frame {data}")
 
