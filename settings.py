@@ -23,11 +23,13 @@ class _ServoMappings:
     def __init__(self, data: Dict[str, Any]):
         self.arms: dict | None = data.get("arms")
         self.head: dict | None = data.get("head")
+        self.arm_limits: dict[str, list[int]] | None = data.get("arm_limits")
+        self.head_limits: dict[str, list[int]] | None = data.get("head_limits")
 
 
 class _Servos:
     def __init__(self, data: Dict[str, Any]):
-        self.mappings: _ServoMappings | None = data.get("mappings")
+        self.mappings: _ServoMappings | None = _ServoMappings(data.get("mappings"))
 
 
 class _Battery:

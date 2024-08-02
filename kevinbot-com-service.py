@@ -259,7 +259,10 @@ def remote_recv_loop():
                 new_positions = {key: current_state.servos[key] for key in current_state.servos
                                  if key not in previous_servos or previous_servos[key] != current_state.servos[key]}
                 for change in new_positions:
-                    p2_ser.write(f"s={change},{new_positions[change]}\n".encode("utf-8"))
+                    p2_ser.write(f"""s={change},{map_range(new_positions[change], 0, 255, 
+                                                           *settings.servo.mappings.arm_limits.get(str(change), 
+                                                                                                 [0, 180]))}\n"""
+                                 .encode("utf-8"))
             elif command == RemoteCommand.LightingHeadEffect:
                 command_queue.add_command(
                     CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadEffect.value}={value}\n"))
@@ -454,8 +457,8 @@ if __name__ == "__main__":
 
     # arms
     arm_ports = []
-    for port in range(len(settings.servo.mappings["arms"])):
-        arm_ports.append(settings.servo.mappings["arms"][str(port)])
+    for port in range(len(settings.servo.mappings.arms)):
+        arm_ports.append(settings.servo.mappings.arms[str(port)])
 
     # mqtt
     client = mqtt_client.Client(CLI_ID)
