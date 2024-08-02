@@ -83,14 +83,11 @@ class _MPU:
         self.enabled: bool = data.get("enabled", True)
         self.address: int = data.get("address", 104)
         self.update_speed: float = data.get("update-speed", 0.1)
-        self.topic_roll: str = data.get("topic-roll", "kevinbot/mpu/roll")
-        self.topic_pitch: str = data.get("topic-pitch", "kevinbot/mpu/pitch")
-        self.topic_yaw: str = data.get("topic-yaw", "kevinbot/mpu/yaw")
+        self.topic_imu: str = data.get("topic-imu", "kevinbot/mpu/data")
 
 
 class _BME:
     def __init__(self, data: Dict[str, Any]):
-        self.update_speed: float = data.get("update-speed", 0.1)
         self.topic_temp: str = data.get("topic-temp", "kevinbot/bme/temperature")
         self.topic_humidity: str = data.get("topic-humidity", "kevinbot/bme/humidity")
         self.topic_pressure: str = data.get("topic-pressure", "kevinbot/bme/pressure")

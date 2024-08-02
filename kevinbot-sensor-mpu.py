@@ -22,9 +22,7 @@ settings = json.load(open(SETTINGS_PATH, 'r'))
 
 BROKER = settings["services"]["mqtt"]["address"]
 PORT = settings["services"]["mqtt"]["port"]
-TOPIC_ROLL = settings["services"]["mpu"]["topic-roll"]
-TOPIC_PITCH = settings["services"]["mpu"]["topic-pitch"]
-TOPIC_YAW = settings["services"]["mpu"]["topic-yaw"]
+TOPIC_IMU = settings["services"]["mpu"]["topic-imu"]
 CLI_ID = f'kevinbot-mpu-{uuid.uuid4()}'
 
 
@@ -49,18 +47,17 @@ def publish(topic, msg):
 
 
 def loop():
+    delay = settings["services"]["mpu"]["update-speed"]
     while True:
         # read from sensor
         imu.readSensor()
         imu.computeOrientation()
 
         # publish over mqtt
-        publish(TOPIC_ROLL, round(imu.roll, 2))
-        publish(TOPIC_PITCH, round(imu.pitch, 2))
-        publish(TOPIC_YAW, round(imu.yaw, 2))
+        publish(TOPIC_IMU, f"{round(imu.roll, 2)},{round(imu.pitch, 2)},{round(imu.yaw, 2)}")
 
         # wait
-        time.sleep(settings["services"]["mpu"]["update-speed"])
+        time.sleep(delay)
 
 
 if __name__ == "__main__":

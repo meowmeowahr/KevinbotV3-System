@@ -51,15 +51,15 @@ class CurrentStateManager:
     sensors: dict = dataclass_field(default_factory=lambda: {
         "batts": [-1, -1],
         "temps": [-1, -1, -1],
-        "mpu": [0, 0, 0],
-        "bme": [0, 0, 0],
+        "mpu": [-1, -1, -1],
+        "bme": [-1, -1, -1],
     })
-    lighting_head_update: int = dataclass_field(default_factory = lambda: settings.lighting.head.update)
-    lighting_head_brightness: int = dataclass_field(default_factory = lambda: settings.lighting.head.brightness)
-    lighting_body_update: int = dataclass_field(default_factory = lambda: settings.lighting.body.update)
-    lighting_body_brightness: int = dataclass_field(default_factory = lambda: settings.lighting.body.brightness)
-    lighting_base_update: int = dataclass_field(default_factory = lambda: settings.lighting.base.update)
-    lighting_base_brightness: int = dataclass_field(default_factory = lambda: settings.lighting.base.brightness)
+    lighting_head_update: int = dataclass_field(default_factory=lambda: settings.lighting.head.update)
+    lighting_head_brightness: int = dataclass_field(default_factory=lambda: settings.lighting.head.brightness)
+    lighting_body_update: int = dataclass_field(default_factory=lambda: settings.lighting.body.update)
+    lighting_body_brightness: int = dataclass_field(default_factory=lambda: settings.lighting.body.brightness)
+    lighting_base_update: int = dataclass_field(default_factory=lambda: settings.lighting.base.update)
+    lighting_base_brightness: int = dataclass_field(default_factory=lambda: settings.lighting.base.brightness)
 
 
 def map_range(value, in_min, in_max, out_min, out_max):
@@ -182,8 +182,28 @@ def recv_loop():
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
         elif line[0] == "sensors.temps":
-            current_state.sensors["temps"] = list(map(lambda x: int(x)/100, line[1].split(",")))
+            bad = False
+            for item in line[1].split(","):
+                if not item.isdigit():
+                    logger.warning("Got bad data from sensors.temps")
+                    bad = True
+                    break
+            if bad:
+                continue
+
+            current_state.sensors["temps"] = list(map(lambda x: int(x) / 100, line[1].split(",")))
             remote.send(f"sensors.temps={','.join(list(map(str, current_state.sensors['temps'])))}")
+        elif line[0] == "sensors.bme":
+            bad = False
+            for item in line[1].split(","):
+                if not item.isdigit():
+                    logger.warning("Got bad data from sensors.bme")
+                    bad = True
+                    break
+            if bad:
+                continue
+            current_state.sensors["bme"] = list(map(int, line[1].split(",")))
+            remote.send(f"sensors.bme={','.join(list(map(str, current_state.sensors['bme'])))}")
 
 
 def head_recv_loop():
@@ -212,7 +232,7 @@ def transmit_full_remote_list():
 def remote_recv_loop():
     while True:
         try:
-            data = remote.get() # {"command": "arms.positions", "value": f"{','.join([str(random.randint(0,180)) for _ in range(14)])}"}
+            data = remote.get()  # {"command": "arms.positions", "value": f"{','.join([str(random.randint(0,180)) for _ in range(14)])}"}
             times = [time.time_ns()]
 
             if data["status"] == "no_rf_data":
@@ -241,14 +261,18 @@ def remote_recv_loop():
                 for change in new_positions:
                     p2_ser.write(f"s={change},{new_positions[change]}\n".encode("utf-8"))
             elif command == RemoteCommand.LightingHeadEffect:
-                command_queue.add_command(CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadEffect.value}={value}\n"))
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadEffect.value}={value}\n"))
             elif command == RemoteCommand.LightingHeadColor1:
-                command_queue.add_command(CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor1.value}={value}\n"))
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor1.value}={value}\n"))
             elif command == RemoteCommand.LightingHeadColor2:
-                command_queue.add_command(CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor2.value}={value}\n"))
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor2.value}={value}\n"))
             elif command == RemoteCommand.LightingHeadUpdateSpeed:
                 current_state.lighting_head_update = int(value)
-                command_queue.add_command(CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadUpdateSpeed.value}={value}\n"))
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadUpdateSpeed.value}={value}\n"))
             elif command == RemoteCommand.LightingHeadBright:
                 current_state.lighting_head_brightness = int(value)
                 command_queue.add_command(
@@ -350,14 +374,10 @@ def on_connect(cli, userdata, flags, rc):
 
 
 def on_message(cli, userdata, msg):
-    if settings.services.mpu.topic_roll in msg.topic:
-        current_state.sensors["mpu"][0] = float(msg.payload.decode())
-    elif settings.services.mpu.topic_pitch in msg.topic:
-        current_state.sensors["mpu"][1] = float(msg.payload.decode())
-    elif settings.services.mpu.topic_yaw in msg.topic:
-        current_state.sensors["mpu"][2] = float(msg.payload.decode())
+    if settings.services.mpu.topic_imu in msg.topic:
+        current_state.sensors["mpu"] = list(map(float, msg.payload.decode().split(",")))
         remote.send(
-            f"imu={current_state.sensors['mpu'][0]},"
+            f"sensors.imu={current_state.sensors['mpu'][0]},"
             f"{current_state.sensors['mpu'][1]},"
             f"{current_state.sensors['mpu'][2]}")
     elif settings.services.bme.topic_temp in msg.topic:
@@ -431,7 +451,7 @@ if __name__ == "__main__":
 
     # arms
     arm_ports = []
-    for port in range(len(settings.servo.mappings["arms"] )):
+    for port in range(len(settings.servo.mappings["arms"])):
         arm_ports.append(settings.servo.mappings["arms"][str(port)])
 
     # mqtt
@@ -439,9 +459,7 @@ if __name__ == "__main__":
     client.on_connect = on_connect
     client.on_message = on_message
     client.connect(settings.services.mqtt.address, settings.services.mqtt.port)
-    client.subscribe(settings.services.mpu.topic_roll)
-    client.subscribe(settings.services.mpu.topic_pitch)
-    client.subscribe(settings.services.mpu.topic_yaw)
+    client.subscribe(settings.services.mpu.topic_imu)
     client.subscribe(settings.services.bme.topic_temp)
     client.subscribe(settings.services.bme.topic_humidity)
     client.subscribe(settings.services.bme.topic_pressure)

@@ -6,7 +6,7 @@
         "page": 1
     },
     "logging": {
-        "level": 0
+        "level": 5
     },
     "servos": {
         "mappings": {
@@ -64,7 +64,7 @@
             "address": "localhost"
         },
         "serial": {
-            "p2-baud": 624000,
+            "p2-baud": 921600,
             "p2-port": "/dev/ttyAMA2",
             "xb-baud": 460800,
             "xb-port": "/dev/ttyAMA0",
@@ -83,13 +83,10 @@
         "mpu": {
             "enabled": true,
             "address": 104,
-            "update-speed": 0.1,
-            "topic-roll": "kevinbot/mpu/roll",
-            "topic-pitch": "kevinbot/mpu/pitch",
-            "topic-yaw": "kevinbot/mpu/yaw"
+            "update-speed": 0.05,
+            "topic-imu": "kevinbot/mpu/data"
         },
         "bme": {
-            "update-speed": 0.1,
             "topic-temp": "kevinbot/bme/temperature",
             "topic-humidity": "kevinbot/bme/humidity",
             "topic-pressure": "kevinbot/bme/pressure"
