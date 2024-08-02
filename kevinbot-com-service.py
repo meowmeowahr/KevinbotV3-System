@@ -313,6 +313,9 @@ def remote_recv_loop():
                 current_state.lighting_base_brightness = int(value)
                 command_queue.add_command(
                     CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseBright.value}={value}\n"))
+            elif command == RemoteCommand.LightingCameraBrightness:
+                command_queue.add_command(
+                    CoreSerialCommand(p2_ser, f"lighting.cam.bright={value}\n"))
             elif command == RemoteCommand.SpeechEngine:
                 current_state.speech_engine = value
             elif command == RemoteCommand.RequestEstop:
