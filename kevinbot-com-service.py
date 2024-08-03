@@ -19,7 +19,7 @@ from paho.mqtt import client as mqtt_client
 
 from remote_interface import RemoteInterface, RemoteCommand
 from robot_commands import SpeechCommand, RemoteHandshakeCommand, RobotRequestEnableCommand, RobotRequestEstopCommand, \
-    CoreSerialCommand, WavCommand
+    CoreSerialCommand, WavCommand, RemoteEnableCommand
 from settings import SettingsManager
 
 __version__ = "1.0.0"
@@ -147,11 +147,12 @@ def recv_loop():
                     current_state.battery_notifications_displayed[1] = True
 
             remote.send(data)
-        elif line[0] == "system.enable":
-            command_queue.add_command(RobotRequestEnableCommand(line[1].lower() in ["true", "t"],
-                                                                p2_ser,
-                                                                remote,
-                                                                current_state))
+        elif line[0] == "core.enabled":
+            # command_queue.add_command(RobotRequestEnableCommand(line[1].lower() in ["true", "t"],
+            #                                                     p2_ser,
+            #                                                     remote,
+            #                                                     current_state))
+            command_queue.add_command(RemoteEnableCommand(line[1].lower() in ["true", "t"], remote))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(line[1].lower() in ["true", "t"])))
             command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif line[0] == "core.error":
@@ -174,7 +175,6 @@ def recv_loop():
                                                                 remote,
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
-            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif line[0] == "sensors.temps":
             bad = False
             for item in line[1].split(","):
@@ -304,7 +304,6 @@ def remote_recv(data):
             command_queue.add_command(
                 CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyColor1.value}={value}\n"))
         elif command == RemoteCommand.LightingBodyColor2:
-            current_state.lighting_body_brightness = int(value)
             command_queue.add_command(
                 CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyColor2.value}={value}\n"))
         elif command == RemoteCommand.LightingBodyUpdateSpeed:
@@ -322,7 +321,6 @@ def remote_recv(data):
             command_queue.add_command(
                 CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseColor1.value}={value}\n"))
         elif command == RemoteCommand.LightingBaseColor2:
-            current_state.lighting_base_brightness = int(value)
             command_queue.add_command(
                 CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseColor2.value}={value}\n"))
         elif command == RemoteCommand.LightingBaseUpdateSpeed:
@@ -340,6 +338,7 @@ def remote_recv(data):
             current_state.speech_engine = value
         elif command == RemoteCommand.RequestEstop:
             command_queue.add_command(RobotRequestEstopCommand(p2_ser, remote, current_state))
+            command_queue.add_command(WavCommand("sounds/estop.wav"))
         elif command == RemoteCommand.RequestEnable:
             enabled = value.lower() in ["true", "t"]
             command_queue.add_command(RobotRequestEnableCommand(enabled,
@@ -347,7 +346,6 @@ def remote_recv(data):
                                                                 remote,
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(enabled)))
-            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif command == RemoteCommand.RemoteListAdd:
             if value not in current_state.connected_remotes:
                 current_state.connected_remotes.append(value)

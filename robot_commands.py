@@ -112,7 +112,7 @@ class RobotRequestEnableCommand(_BaseCommand):
 
         if not self.ena == self.current_state.enabled:
             logger.info(f"Enabled: {self.ena}")
-            self.core.write(f"kevinbot.enabled={int(self.ena)}\n".encode("utf-8"))
+            self.core.write(f"kevinbot.tryenable={int(self.ena)}\n".encode("utf-8"))
 
             if not self.ena:
                 # On disable
@@ -123,7 +123,16 @@ class RobotRequestEnableCommand(_BaseCommand):
                 self.core.write("body_color1=000000\n".encode("utf-8"))
                 self.core.write("base_color1=000000\n".encode("utf-8"))
 
-            self.remote.send(f"kevinbot.enabled={self.ena}")
+
+class RemoteEnableCommand(_BaseCommand):
+    def __init__(self, ena: bool, remote: remote_interface.RemoteInterface):
+        super().__init__()
+        self.ena = ena
+        self.remote = remote
+        self._command = self._request
+
+    def _request(self):
+        self.remote.send(f"kevinbot.enabled={self.ena}")
 
 
 class RobotRequestEstopCommand(_BaseCommand):
@@ -139,15 +148,6 @@ class RobotRequestEstopCommand(_BaseCommand):
     def _request(self):
         self.core.write("system.estop\n".encode("utf-8"))
         self.remote.send("system.estop")
-
-        self.core.write("kevinbot.enabled=0\n".encode("utf-8"))
-        self.remote.send("kevinbot.enabled=False")
-        self.core.write("head_effect=color1\n".encode("utf-8"))
-        self.core.write("body_effect=color1\n".encode("utf-8"))
-        self.core.write("base_effect=color1\n".encode("utf-8"))
-        self.core.write("head_color1=000000\n".encode("utf-8"))
-        self.core.write("body_color1=000000\n".encode("utf-8"))
-        self.core.write("base_color1=000000\n".encode("utf-8"))
 
         if self.power_off:
             self.core.flush()
