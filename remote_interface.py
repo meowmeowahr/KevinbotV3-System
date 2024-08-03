@@ -85,4 +85,4 @@ class RemoteInterface:
 
     def send(self, data: str):
         self.xbee.send("tx", dest_addr=b'\x00\x00',
-                       data=bytes("{}".format(data), 'utf-8'))
+                       data=bytes(data, 'utf-8'))
