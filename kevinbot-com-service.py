@@ -153,6 +153,7 @@ def recv_loop():
                                                                 remote,
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(line[1].lower() in ["true", "t"])))
+            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif line[0] == "core.error":
             if not line[1].isdigit():
                 logger.warning(f"Got non-digit value for core.error(0), {line[1]}")
@@ -173,6 +174,7 @@ def recv_loop():
                                                                 remote,
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
+            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif line[0] == "sensors.temps":
             bad = False
             for item in line[1].split(","):
@@ -345,6 +347,7 @@ def remote_recv(data):
                                                                 remote,
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(enabled)))
+            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif command == RemoteCommand.RemoteListAdd:
             if value not in current_state.connected_remotes:
                 current_state.connected_remotes.append(value)
@@ -374,6 +377,7 @@ def remote_recv(data):
                                                             remote,
                                                             current_state))
         command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
+        command_queue.add_command(WavCommand("sounds/enable.wav"))
         logger.error(f"Exception in Remote Loop: {e}")
         traceback.print_exc()
 

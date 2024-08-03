@@ -97,12 +97,11 @@ class RemoteHandshakeCommand(_BaseCommand):
 
 class RobotRequestEnableCommand(_BaseCommand):
     def __init__(self, ena: bool, core_interface: serial.Serial, remote: remote_interface.RemoteInterface,
-                 current_state, sound: bool = True):
+                 current_state):
         super().__init__()
         self.ena = ena
         self.core = core_interface
         self.remote = remote
-        self.sound = sound
         self.current_state = current_state
         self._command = self._request
 
@@ -125,9 +124,6 @@ class RobotRequestEnableCommand(_BaseCommand):
                 self.core.write("base_color1=000000\n".encode("utf-8"))
 
             self.remote.send(f"kevinbot.enabled={self.ena}")
-            # if self.sound:
-            #     playsound.playsound(os.path.join(os.curdir,
-            #                                      "sounds/enable.wav"), False)
 
 
 class RobotRequestEstopCommand(_BaseCommand):
