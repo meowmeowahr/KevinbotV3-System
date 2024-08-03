@@ -1,10 +1,10 @@
+import subprocess
 import sys
 import threading
-import subprocess
 
-from PyQt5.QtCore import QLockFile, QDir
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction, QApplication
+from qtpy.QtCore import QLockFile, QDir
+from qtpy.QtGui import QIcon
+from qtpy.QtWidgets import QSystemTrayIcon, QMenu, QAction, QApplication
 
 
 class TrayIcon(QSystemTrayIcon):
@@ -26,11 +26,12 @@ class TrayIcon(QSystemTrayIcon):
         self.setToolTip("Kevinbot Streamer is Running")
         
         self.show()
-        
-    def end(self):
+
+    @staticmethod
+    def end():
         streamer.terminate()
         QApplication.instance().quit()
-        
+
 
 def run_server():
     import app as server_app
@@ -46,7 +47,7 @@ if __name__ == '__main__':
         run_server()
         QApplication.setQuitOnLastWindowClosed(False)
         icon = TrayIcon()
-        #streamer.terminate()
+        # streamer.terminate()
         subprocess.run(["notify-send", "Kevinbot Streamer", "Kevinbot is now streaming"])
         sys.exit(app.exec_())
     else:

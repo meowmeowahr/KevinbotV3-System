@@ -26,6 +26,7 @@ class SpeechCommand(_MpCmd):
         self.command = self._speak
 
     def _speak(self):
+        # noinspection PyPackageRequirements
         import festival
         _espeak_engine = pyttsx3.init("espeak")
         if self.engine == "festival":

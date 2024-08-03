@@ -3,17 +3,16 @@ Kevinbot v3 MPU9250-2-MQTT
 By: Kevin Ahr
 """
 
-import sys
-import os
-import time
-import smbus
-import uuid
 import json
 import logging
+import os
+import sys
+import time
+import uuid
 
-from paho.mqtt import client as mqtt_client
-
+import smbus
 from imusensor.MPU9250 import MPU9250
+from paho.mqtt import client as mqtt_client
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
@@ -26,7 +25,7 @@ TOPIC_IMU = settings["services"]["mpu"]["topic-imu"]
 CLI_ID = f'kevinbot-mpu-{uuid.uuid4()}'
 
 
-def on_connect(client, userdata, flags, rc):
+def on_connect(_, __, ___, rc):
     if rc == 0:
         logging.info("Connected to MQTT Broker")
     else:

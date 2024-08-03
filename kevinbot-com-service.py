@@ -222,11 +222,8 @@ def transmit_full_remote_list():
 
 
 def remote_recv(data):
-    # while True:
     try:
-        # data = remote.get()  # {"command": "arms.positions", "value": f"{','.join([str(random.randint(0,180)) for _ in range(14)])}"}
-
-        if not "rf_data" in data:
+        if "rf_data" not in data:
             return
 
         data = data['rf_data'].decode().strip("\r\n").split('=', 1)
@@ -236,9 +233,6 @@ def remote_recv(data):
         else:
             value = ""
 
-        times = [time.time_ns()]
-
-        times.append(time.time_ns())
         # if data[0].startswith("eye."):
         #     head_ser.write(
         #         (raw.split(
@@ -269,13 +263,10 @@ def remote_recv(data):
                 logger.warning(f"Got non-int value for head.position.x(0)")
                 return
 
-            previous_position = [current_state.head_servos.copy().get("x", -1)]
             x_position = map_range(int(value), 0, 255, *settings.servo.mappings.head_limits.get("x", [0, 180]))
             current_state.head_servos["x"] = x_position
 
-            if True:
-                p2_ser.write(f"s={settings.servo.mappings.head.get('x', 14)},{round(x_position)}\n".encode("utf-8"))
-                p2_ser.flush()
+            p2_ser.write(f"s={settings.servo.mappings.head.get('x', 14)},{round(x_position)}\n".encode("utf-8"))
         elif command == RemoteCommand.HeadYPosition:
             try:
                 int(value)
@@ -283,14 +274,10 @@ def remote_recv(data):
                 logger.warning(f"Got non-int value for head.position.y(0)")
                 return
 
-            previous_position = [current_state.head_servos.copy().get("y", -1)]
             y_position = map_range(int(value), 0, 255, *settings.servo.mappings.head_limits.get("y", [0, 180]))
             current_state.head_servos["y"] = y_position
 
-            if previous_position != y_position:
-                print(f"s={settings.servo.mappings.head.get('y', 15)},{round(y_position)}\n")
-                p2_ser.write(f"s={settings.servo.mappings.head.get('y', 15)},{round(y_position)}\n".encode("utf-8"))
-
+            p2_ser.write(f"s={settings.servo.mappings.head.get('y', 15)},{round(y_position)}\n".encode("utf-8"))
         elif command == RemoteCommand.LightingHeadEffect:
             command_queue.add_command(
                 CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadEffect.value}={value}\n"))
@@ -380,7 +367,6 @@ def remote_recv(data):
                     ["notify-send", "Ping!",
                      f"Ping from {data[1].split(',')[1]}"])
 
-        times.append(time.time_ns())
         # print("time", [t-times[0] for t in times])
     except Exception as e:
         command_queue.add_command(RobotRequestEnableCommand(False,
@@ -392,7 +378,7 @@ def remote_recv(data):
         traceback.print_exc()
 
 
-def on_connect(cli, userdata, flags, rc):
+def on_connect(_, __, ___, rc):
     if rc == 0:
         logger.success("Connected to MQTT Broker")
     else:
@@ -400,7 +386,7 @@ def on_connect(cli, userdata, flags, rc):
         sys.exit()
 
 
-def on_message(cli, userdata, msg):
+def on_message(_, __, msg):
     if settings.services.mpu.topic_imu in msg.topic:
         current_state.sensors["mpu"] = list(map(float, msg.payload.decode().split(",")))
         remote.send(
@@ -479,8 +465,8 @@ if __name__ == "__main__":
 
     # arms
     arm_ports = []
-    for port in range(len(settings.servo.mappings.arms)):
-        arm_ports.append(settings.servo.mappings.arms[str(port)])
+    for servo_port in range(len(settings.servo.mappings.arms)):
+        arm_ports.append(settings.servo.mappings.arms[str(servo_port)])
 
     # mqtt
     client = mqtt_client.Client(CLI_ID)
