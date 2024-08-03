@@ -1,17 +1,15 @@
 import os
 import subprocess
+import wave
 
+import pyttsx3
 import serial
 from command_queue.commands import BaseCommand as _BaseCommand
 from command_queue.commands import MultiprocessingCommand as _MpCmd
-
-import pyttsx3
-import playsound
-
-import remote_interface
-
 from loguru import logger
 
+import remote_interface
+from audioutils import shutup_pyaudio
 from settings import SettingsManager
 from utils import split_string
 
@@ -35,6 +33,33 @@ class SpeechCommand(_MpCmd):
         elif self.engine == "espeak":
             _espeak_engine.say(self.content)
             _espeak_engine.runAndWait()
+
+
+class WavCommand(_MpCmd):
+    def __init__(self, file: str):
+        super().__init__()
+        self.file = file
+        self.command = self._play
+
+    def _play(self):
+        with shutup_pyaudio() as audio:
+            f = wave.open(self.file, "rb")
+            # open stream
+            stream = audio.open(format=audio.get_format_from_width(f.getsampwidth()),
+                                channels=f.getnchannels(),
+                                rate=f.getframerate(),
+                                output=True)
+            # read data
+            data = f.readframes(1024)
+
+            # play stream
+            while data:
+                stream.write(data)
+                data = f.readframes(1024)
+
+            # stop stream
+            stream.stop_stream()
+            stream.close()
 
 
 class RemoteHandshakeCommand(_BaseCommand):
@@ -99,9 +124,9 @@ class RobotRequestEnableCommand(_BaseCommand):
                 self.core.write("base_color1=000000\n".encode("utf-8"))
 
             self.remote.send(f"kevinbot.enabled={self.ena}")
-            if self.sound:
-                playsound.playsound(os.path.join(os.curdir,
-                                                 "sounds/enable.wav"), False)
+            # if self.sound:
+            #     playsound.playsound(os.path.join(os.curdir,
+            #                                      "sounds/enable.wav"), False)
 
 
 class RobotRequestEstopCommand(_BaseCommand):

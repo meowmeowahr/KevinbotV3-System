@@ -1,30 +1,25 @@
+import datetime
 import logging
-import random
+import os
+import subprocess
+import sys
+import threading
+import time
 import traceback
-from typing import Any, Final, List
+import uuid
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
+from typing import Any, Final, List
 
-import datetime
-import os
-import time
-import subprocess
-import threading
-import sys
-import uuid
-
+import serial
+from command_queue import CommandQueue
 from command_queue.commands import FunctionCommand
 from loguru import logger
-
-import playsound
-import serial
 from paho.mqtt import client as mqtt_client
-
-from command_queue import CommandQueue, CommandQueueOptions
 
 from remote_interface import RemoteInterface, RemoteCommand
 from robot_commands import SpeechCommand, RemoteHandshakeCommand, RobotRequestEnableCommand, RobotRequestEstopCommand, \
-    RobotArmCommand, CoreSerialCommand
+    CoreSerialCommand, WavCommand
 from settings import SettingsManager
 
 __version__ = "1.0.0"
@@ -47,7 +42,8 @@ class CurrentStateManager:
     battery_notifications_displayed: list[bool] = dataclass_field(default_factory=lambda: [False, False])
     battery_sound_played: list[bool] = dataclass_field(default_factory=lambda: [False, False])
     connected_remotes: list[str] = dataclass_field(default_factory=list)
-    servos: dict = dataclass_field(default_factory=dict)
+    arm_servos: dict = dataclass_field(default_factory=dict)
+    head_servos: dict = dataclass_field(default_factory=dict)
     sensors: dict = dataclass_field(default_factory=lambda: {
         "batts": [-1, -1],
         "temps": [-1, -1, -1],
@@ -119,14 +115,12 @@ def recv_loop():
 
             if int(line[1][0]) < settings.battery.warn_voltages[0]:
                 if settings.battery.warn_sound == "repeat":
-                    playsound.playsound(os.path.join(os.curdir,
-                                                     "sounds/low-battery.mp3"), block=False)
+                    command_queue.add_command(WavCommand("sounds/low-battery.wav"))
                 elif settings.battery.warn_sound == "never":
                     pass
                 else:
                     if not current_state.battery_sound_played[0]:
-                        playsound.playsound(os.path.join(os.curdir,
-                                                         "sounds/low-battery.mp3"), block=False)
+                        command_queue.add_command(WavCommand("sounds/low-battery.wav"))
                         current_state.battery_sound_played[0] = True
                 if not current_state.battery_notifications_displayed[0]:
                     subprocess.run(["notify-send", "Kevinbot System",
@@ -137,14 +131,12 @@ def recv_loop():
 
             if int(line[1][1]) < settings.battery.warn_voltages[1] and settings.battery.enable_two:
                 if settings.battery.warn_sound == "repeat":
-                    playsound.playsound(os.path.join(os.curdir,
-                                                     "sounds/low-battery.mp3"), block=False)
+                    command_queue.add_command(WavCommand("sounds/low-battery.wav"))
                 elif settings.battery.warn_sound == "never":
                     pass
                 else:
                     if not current_state.battery_sound_played[1]:
-                        playsound.playsound(os.path.join(os.curdir,
-                                                         "sounds/low-battery.mp3"), block=False)
+                        command_queue.add_command(WavCommand("sounds/low-battery.wav"))
                         current_state.battery_sound_played[1] = True
 
                 if not current_state.battery_notifications_displayed[1]:
@@ -229,146 +221,175 @@ def transmit_full_remote_list():
                     f"{len(data) - 1}={data[count]}")
 
 
-def remote_recv_loop():
-    while True:
-        try:
-            data = remote.get()  # {"command": "arms.positions", "value": f"{','.join([str(random.randint(0,180)) for _ in range(14)])}"}
-            times = [time.time_ns()]
+def remote_recv(data):
+    # while True:
+    try:
+        # data = remote.get()  # {"command": "arms.positions", "value": f"{','.join([str(random.randint(0,180)) for _ in range(14)])}"}
 
-            if data["status"] == "no_rf_data":
-                logger.warning("XBee frame contains no data")
+        if not "rf_data" in data:
+            return
 
-            command: RemoteCommand = data["command"]
-            value: str = data["value"]
-            times.append(time.time_ns())
-            # if data[0].startswith("eye."):
-            #     head_ser.write(
-            #         (raw.split(
-            #             ".",
-            #             maxsplit=1)[1] +
-            #          "\n").encode("UTF-8"))
-            if command == RemoteCommand.SpeechSpeak:
-                if current_state.enabled:
-                    command_queue.add_command(SpeechCommand(value, current_state.speech_engine))
-            elif command == RemoteCommand.ArmPositions:
-                previous_servos = current_state.servos.copy()
-                positions = list(map(int, value.split(",")))
-                for port, position in (zip(arm_ports, positions)):
-                    current_state.servos[port] = position
-                # get differences between previous and current positions
-                new_positions = {key: current_state.servos[key] for key in current_state.servos
-                                 if key not in previous_servos or previous_servos[key] != current_state.servos[key]}
-                for change in new_positions:
-                    p2_ser.write(f"""s={change},{map_range(new_positions[change], 0, 255, 
-                                                           *settings.servo.mappings.arm_limits.get(str(change), 
-                                                                                                 [0, 180]))}\n"""
-                                 .encode("utf-8"))
-            elif command == RemoteCommand.LightingHeadEffect:
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadEffect.value}={value}\n"))
-            elif command == RemoteCommand.LightingHeadColor1:
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor1.value}={value}\n"))
-            elif command == RemoteCommand.LightingHeadColor2:
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor2.value}={value}\n"))
-            elif command == RemoteCommand.LightingHeadUpdateSpeed:
-                current_state.lighting_head_update = int(value)
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadUpdateSpeed.value}={value}\n"))
-            elif command == RemoteCommand.LightingHeadBright:
-                current_state.lighting_head_brightness = int(value)
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadBright.value}={value}\n"))
-            elif command == RemoteCommand.LightingBodyEffect:
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyEffect.value}={value}\n"))
-            elif command == RemoteCommand.LightingBodyColor1:
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyColor1.value}={value}\n"))
-            elif command == RemoteCommand.LightingBodyColor2:
-                current_state.lighting_body_brightness = int(value)
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyColor2.value}={value}\n"))
-            elif command == RemoteCommand.LightingBodyUpdateSpeed:
-                current_state.lighting_body_update = int(value)
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyUpdateSpeed.value}={value}\n"))
-            elif command == RemoteCommand.LightingBodyBright:
-                current_state.lighting_body_brightness = int(value)
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyBright.value}={value}\n"))
-            elif command == RemoteCommand.LightingBaseEffect:
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseEffect.value}={value}\n"))
-            elif command == RemoteCommand.LightingBaseColor1:
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseColor1.value}={value}\n"))
-            elif command == RemoteCommand.LightingBaseColor2:
-                current_state.lighting_base_brightness = int(value)
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseColor2.value}={value}\n"))
-            elif command == RemoteCommand.LightingBaseUpdateSpeed:
-                current_state.lighting_base_update = int(value)
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseUpdateSpeed.value}={value}\n"))
-            elif command == RemoteCommand.LightingBaseBright:
-                current_state.lighting_base_brightness = int(value)
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseBright.value}={value}\n"))
-            elif command == RemoteCommand.LightingCameraBrightness:
-                command_queue.add_command(
-                    CoreSerialCommand(p2_ser, f"lighting.cam.bright={value}\n"))
-            elif command == RemoteCommand.SpeechEngine:
-                current_state.speech_engine = value
-            elif command == RemoteCommand.RequestEstop:
-                command_queue.add_command(RobotRequestEstopCommand(p2_ser, remote, current_state))
-            elif command == RemoteCommand.RequestEnable:
-                enabled = value.lower() in ["true", "t"]
-                command_queue.add_command(RobotRequestEnableCommand(enabled,
-                                                                    p2_ser,
-                                                                    remote,
-                                                                    current_state))
-                command_queue.add_command(FunctionCommand(lambda: set_enabled(enabled)))
-            elif command == RemoteCommand.RemoteListAdd:
-                if value not in current_state.connected_remotes:
-                    current_state.connected_remotes.append(value)
-                    logger.info(f"Wireless device connected: {value}")
-                    logger.info(f"Total devices: {current_state.connected_remotes}")
-                command_queue.add_command(
-                    RemoteHandshakeCommand(remote, value.split("|")[0], __version__, current_state))
-            elif command == RemoteCommand.RemoteListRemove:
-                if value in current_state.connected_remotes:
-                    current_state.connected_remotes.remove(value)
-                    logger.info(f"Wireless device disconnected: {value}")
-                logger.info(f"Total devices: {current_state.connected_remotes}")
-            elif command == RemoteCommand.RemoteListFetch:
-                transmit_full_remote_list()
-            elif command == RemoteCommand.Ping:
-                if value.split(",")[0] == "KEVINBOTV3":
-                    threading.Thread(
-                        target=playsound.playsound,
-                        args=(
-                            os.path.join(
-                                os.curdir,
-                                "sounds/device-notify.wav"),
-                        ),
-                        daemon=True).start()
-                    logger.info(f"Ping from {data[1].split(',')[1]}")
-                    subprocess.run(
-                        ["notify-send", "Ping!",
-                         f"Ping from {data[1].split(',')[1]}"])
+        data = data['rf_data'].decode().strip("\r\n").split('=', 1)
+        command = RemoteCommand(data[0])
+        if len(data) > 1:
+            value = data[1]
+        else:
+            value = ""
 
-            times.append(time.time_ns())
-            # print("time", [t-times[0] for t in times])
-        except Exception as e:
-            command_queue.add_command(RobotRequestEnableCommand(False,
+        times = [time.time_ns()]
+
+        times.append(time.time_ns())
+        # if data[0].startswith("eye."):
+        #     head_ser.write(
+        #         (raw.split(
+        #             ".",
+        #             maxsplit=1)[1] +
+        #          "\n").encode("UTF-8"))
+        if command == RemoteCommand.SpeechSpeak:
+            if current_state.enabled:
+                command_queue.add_command(SpeechCommand(value, current_state.speech_engine))
+        elif command == RemoteCommand.ArmPositions:
+            previous_servos = current_state.arm_servos.copy()
+            positions = list(map(int, value.split(",")))
+            for port, position in (zip(arm_ports, positions)):
+                current_state.arm_servos[port] = position
+            # get differences between previous and current positions
+            new_positions = {key: current_state.arm_servos[key] for key in current_state.arm_servos
+                             if key not in previous_servos or previous_servos[key] != current_state.arm_servos[key]}
+            for change in new_positions:
+                p2_ser.write(f"""s={change},{map_range(new_positions[change], 0, 255,
+                                                       *settings.servo.mappings.arm_limits.get(str(change),
+                                                                                               [0, 180]))}\n"""
+                             .encode("utf-8"))
+            p2_ser.flush()
+        elif command == RemoteCommand.HeadXPosition:
+            try:
+                int(value)
+            except ValueError:
+                logger.warning(f"Got non-int value for head.position.x(0)")
+                return
+
+            previous_position = [current_state.head_servos.copy().get("x", -1)]
+            x_position = map_range(int(value), 0, 255, *settings.servo.mappings.head_limits.get("x", [0, 180]))
+            current_state.head_servos["x"] = x_position
+
+            if True:
+                p2_ser.write(f"s={settings.servo.mappings.head.get('x', 14)},{round(x_position)}\n".encode("utf-8"))
+                p2_ser.flush()
+        elif command == RemoteCommand.HeadYPosition:
+            try:
+                int(value)
+            except ValueError:
+                logger.warning(f"Got non-int value for head.position.y(0)")
+                return
+
+            previous_position = [current_state.head_servos.copy().get("y", -1)]
+            y_position = map_range(int(value), 0, 255, *settings.servo.mappings.head_limits.get("y", [0, 180]))
+            current_state.head_servos["y"] = y_position
+
+            if previous_position != y_position:
+                print(f"s={settings.servo.mappings.head.get('y', 15)},{round(y_position)}\n")
+                p2_ser.write(f"s={settings.servo.mappings.head.get('y', 15)},{round(y_position)}\n".encode("utf-8"))
+
+        elif command == RemoteCommand.LightingHeadEffect:
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadEffect.value}={value}\n"))
+        elif command == RemoteCommand.LightingHeadColor1:
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor1.value}={value}\n"))
+        elif command == RemoteCommand.LightingHeadColor2:
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadColor2.value}={value}\n"))
+        elif command == RemoteCommand.LightingHeadUpdateSpeed:
+            current_state.lighting_head_update = int(value)
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadUpdateSpeed.value}={value}\n"))
+        elif command == RemoteCommand.LightingHeadBright:
+            current_state.lighting_head_brightness = int(value)
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingHeadBright.value}={value}\n"))
+        elif command == RemoteCommand.LightingBodyEffect:
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyEffect.value}={value}\n"))
+        elif command == RemoteCommand.LightingBodyColor1:
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyColor1.value}={value}\n"))
+        elif command == RemoteCommand.LightingBodyColor2:
+            current_state.lighting_body_brightness = int(value)
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyColor2.value}={value}\n"))
+        elif command == RemoteCommand.LightingBodyUpdateSpeed:
+            current_state.lighting_body_update = int(value)
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyUpdateSpeed.value}={value}\n"))
+        elif command == RemoteCommand.LightingBodyBright:
+            current_state.lighting_body_brightness = int(value)
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBodyBright.value}={value}\n"))
+        elif command == RemoteCommand.LightingBaseEffect:
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseEffect.value}={value}\n"))
+        elif command == RemoteCommand.LightingBaseColor1:
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseColor1.value}={value}\n"))
+        elif command == RemoteCommand.LightingBaseColor2:
+            current_state.lighting_base_brightness = int(value)
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseColor2.value}={value}\n"))
+        elif command == RemoteCommand.LightingBaseUpdateSpeed:
+            current_state.lighting_base_update = int(value)
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseUpdateSpeed.value}={value}\n"))
+        elif command == RemoteCommand.LightingBaseBright:
+            current_state.lighting_base_brightness = int(value)
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"{RemoteCommand.LightingBaseBright.value}={value}\n"))
+        elif command == RemoteCommand.LightingCameraBrightness:
+            command_queue.add_command(
+                CoreSerialCommand(p2_ser, f"lighting.cam.bright={value}\n"))
+        elif command == RemoteCommand.SpeechEngine:
+            current_state.speech_engine = value
+        elif command == RemoteCommand.RequestEstop:
+            command_queue.add_command(RobotRequestEstopCommand(p2_ser, remote, current_state))
+        elif command == RemoteCommand.RequestEnable:
+            enabled = value.lower() in ["true", "t"]
+            command_queue.add_command(RobotRequestEnableCommand(enabled,
                                                                 p2_ser,
                                                                 remote,
                                                                 current_state))
-            command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
-            logger.error(f"Exception in Remote Loop: {e}")
-            traceback.print_exc()
+            command_queue.add_command(FunctionCommand(lambda: set_enabled(enabled)))
+        elif command == RemoteCommand.RemoteListAdd:
+            if value not in current_state.connected_remotes:
+                current_state.connected_remotes.append(value)
+                logger.info(f"Wireless device connected: {value}")
+                logger.info(f"Total devices: {current_state.connected_remotes}")
+            command_queue.add_command(
+                RemoteHandshakeCommand(remote, value.split("|")[0], __version__, current_state))
+        elif command == RemoteCommand.RemoteListRemove:
+            if value in current_state.connected_remotes:
+                current_state.connected_remotes.remove(value)
+                logger.info(f"Wireless device disconnected: {value}")
+            logger.info(f"Total devices: {current_state.connected_remotes}")
+        elif command == RemoteCommand.RemoteListFetch:
+            transmit_full_remote_list()
+        elif command == RemoteCommand.Ping:
+            if value.split(",")[0] == "KEVINBOTV3":
+                command_queue.add_command(WavCommand("sounds/device-notify.wav"))
+                logger.info(f"Ping from {data[1].split(',')[1]}")
+                subprocess.run(
+                    ["notify-send", "Ping!",
+                     f"Ping from {data[1].split(',')[1]}"])
+
+        times.append(time.time_ns())
+        # print("time", [t-times[0] for t in times])
+    except Exception as e:
+        command_queue.add_command(RobotRequestEnableCommand(False,
+                                                            p2_ser,
+                                                            remote,
+                                                            current_state))
+        command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
+        logger.error(f"Exception in Remote Loop: {e}")
+        traceback.print_exc()
 
 
 def on_connect(cli, userdata, flags, rc):
@@ -451,7 +472,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=settings.logging.level)
 
     # serial
-    remote = RemoteInterface(settings.services.serial.xb_port, settings.services.serial.xb_baud, escaped=True)
+    remote = RemoteInterface(settings.services.serial.xb_port, settings.services.serial.xb_baud, escaped=True,
+                             callback=remote_recv)
     p2_ser = serial.Serial(settings.services.serial.p2_port, baudrate=settings.services.serial.p2_baud)
     head_ser = serial.Serial(settings.services.serial.head_port, baudrate=settings.services.serial.head_baud)
 
@@ -481,9 +503,6 @@ if __name__ == "__main__":
 
     head_recv_thread = threading.Thread(target=head_recv_loop, daemon=True)
     head_recv_thread.start()
-
-    remote_recv_thread = threading.Thread(target=remote_recv_loop, daemon=True)
-    remote_recv_thread.start()
 
     tick_thread = threading.Thread(target=tick_loop, daemon=True)
     tick_thread.start()

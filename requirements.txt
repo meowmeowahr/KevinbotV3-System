@@ -22,3 +22,4 @@ command_queue~=0.2.0
 pyfestival~=0.6
 smbus~=1.1.post2
 easydict~=1.13
+pyaudio~=0.2.14

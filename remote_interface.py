@@ -1,11 +1,11 @@
 """
 Interface for Kevinbot Remote over XBee
 """
+import enum
+from typing import Callable
 
 import serial
 import xbee
-import enum
-
 from loguru import logger
 
 
@@ -59,12 +59,12 @@ class RemoteCommand(enum.StrEnum):
 
 
 class RemoteInterface:
-    def __init__(self, port: str, baud: int, escaped: bool = False):
+    def __init__(self, port: str, baud: int, callback: Callable | None = None, escaped: bool = False):
         self.port = port
         self.baud = baud
 
         self.serial = serial.Serial(self.port, baudrate=self.baud)
-        self.xbee = xbee.XBee(self.serial, escaped=escaped)
+        self.xbee = xbee.XBee(self.serial, escaped=escaped, callback=callback)
 
     def get(self) -> dict:
         data = self.xbee.wait_read_frame()
