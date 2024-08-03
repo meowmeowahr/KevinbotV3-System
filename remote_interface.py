@@ -2,7 +2,7 @@
 Interface for Kevinbot Remote over XBee
 """
 import enum
-from typing import Callable
+from typing import Callable, Optional
 
 import serial
 import xbee
@@ -59,7 +59,7 @@ class RemoteCommand(enum.StrEnum):
 
 
 class RemoteInterface:
-    def __init__(self, port: str, baud: int, callback: Callable | None = None, escaped: bool = False):
+    def __init__(self, port: str, baud: int, callback: Optional[Callable] = None, escaped: bool = False):
         self.port = port
         self.baud = baud
 
