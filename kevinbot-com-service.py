@@ -175,6 +175,7 @@ def recv_loop():
                                                                 remote,
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(False)))
+            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif line[0] == "sensors.temps":
             bad = False
             for item in line[1].split(","):
@@ -346,6 +347,7 @@ def remote_recv(data):
                                                                 remote,
                                                                 current_state))
             command_queue.add_command(FunctionCommand(lambda: set_enabled(enabled)))
+            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif command == RemoteCommand.RemoteListAdd:
             if value not in current_state.connected_remotes:
                 current_state.connected_remotes.append(value)
