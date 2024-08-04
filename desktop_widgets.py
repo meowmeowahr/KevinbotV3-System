@@ -6,7 +6,7 @@ from typing import Any
 import qtawesome as qta
 from qtpy.QtCore import Qt, QSize, QTimer
 from qtpy.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
-                            QLabel, QLayout)
+                            QLabel, QBoxLayout)
 
 import theme_control
 from KevinbotUI import KBTheme
@@ -83,7 +83,7 @@ class BaseWidget(QFrame):
     def set_data(self, data: any):
         self.data = data
 
-    def add_layout(self, layout: QLayout):
+    def add_layout(self, layout: QBoxLayout):
         self._root_layout.addLayout(layout)
         self._root_layout.addStretch()
 
