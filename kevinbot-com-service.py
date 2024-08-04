@@ -204,7 +204,7 @@ def recv_loop():
 def head_recv_loop():
     while True:
         data = head_ser.readline().decode("UTF-8")
-        if data.startswith("eye_settings."):
+        if data.startswith("eyeSettings."):
             remote.send(data)
 
 
@@ -236,13 +236,10 @@ def remote_recv(data):
         else:
             value = ""
 
-        # if data[0].startswith("eye."):
-        #     head_ser.write(
-        #         (raw.split(
-        #             ".",
-        #             maxsplit=1)[1] +
-        #          "\n").encode("UTF-8"))
-        if command == RemoteCommand.SpeechSpeak:
+        if data[0].startswith("eyes."):
+            print(data)
+            head_ser.write((data[0].split(".")[1] + "=" + data[1] + "\n").encode("UTF-8"))
+        elif command == RemoteCommand.SpeechSpeak:
             if current_state.enabled:
                 command_queue.add_command(SpeechCommand(value, current_state.speech_engine))
         elif command == RemoteCommand.ArmPositions:
@@ -437,6 +434,7 @@ def perform_core_handshake():
             logger.success("Core is connected")
             logger.info("Reset battery notifications")
             current_state.battery_notifications_displayed = [False, False]
+            current_state.error = 0
             break
         time.sleep(0.1)
 
