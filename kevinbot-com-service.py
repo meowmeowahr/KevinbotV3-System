@@ -107,11 +107,8 @@ def recv_loop():
             current_state.sensors["batts"][1] = float(line[1][1]) / 10
             if client:
                 client.publish(
-                    settings.services.com.topic_batt1,
-                    current_state.sensors["batts"][0])
-                client.publish(
-                    settings.services.com.topic_batt2,
-                    current_state.sensors["batts"][1])
+                    settings.services.com.topic_batts,
+                    ",".join(map(str, current_state.sensors["batts"])))
 
             if int(line[1][0]) < settings.battery.warn_voltages[0]:
                 if settings.battery.warn_sound == "repeat":

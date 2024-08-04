@@ -1,20 +1,16 @@
-from typing import Any
-
-from qtpy.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
-                            QLabel, QLayout)
-from qtpy.QtCore import Qt, QSize, QTimer
-import qtawesome as qta
-
-from KevinbotUI import KBTheme
-import theme_control
-
+import datetime
 import os
 import uuid
-import json
-import datetime
+from typing import Any
 
+import qtawesome as qta
+from qtpy.QtCore import Qt, QSize, QTimer
+from qtpy.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
+                            QLabel, QLayout)
+
+import theme_control
+from KevinbotUI import KBTheme
 from kevinbot_qt_mqtt import MqttClient
-
 from settings import SettingsManager
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -230,8 +226,7 @@ class BattWidget(BaseWidget):
         self.set_title("Battery Status")
 
         if self.mqtt_client:
-            self.mqtt_client.subscribe(settings.services.com.topic_batt1)
-            self.mqtt_client.subscribe(settings.services.com.topic_batt2)
+            self.mqtt_client.subscribe(settings.services.com.topic_batts)
             self.mqtt_client.messageSignal.connect(self.message_slot)
 
         if "update" not in self.data:
@@ -253,10 +248,8 @@ class BattWidget(BaseWidget):
             self.layout.addWidget(self.b1)
 
     def message_slot(self, topic: str, payload: str):
-        if settings.services.com.topic_batt1 in topic:
-            self.batt1_voltage = float(payload)
-        elif settings.services.com.topic_batt2 in topic:
-            self.batt2_voltage = float(payload)
+        if settings.services.com.topic_batts in topic:
+            self.batt1_voltage, self.batt2_voltage = map(float, payload.split(",", maxsplit=1))
 
         if settings.battery.enable_two:
             self.b1.setText(f"Battery #1 Voltage: \

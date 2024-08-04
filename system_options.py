@@ -1,6 +1,6 @@
-from typing import Final
-import os
 import json
+import os
+from typing import Final
 
 CURRENT_DIR: Final = os.path.dirname(os.path.realpath(__file__))
 SETTINGS_PATH: Final = os.path.join(CURRENT_DIR, 'settings.json')
@@ -18,9 +18,7 @@ HEAD_BAUD_RATE = settings["services"]["serial"]["head-baud"]
 
 BROKER = settings["services"]["mqtt"]["address"]
 PORT = settings["services"]["mqtt"]["port"]
-TOPIC_ROLL = settings["services"]["mpu"]["topic-roll"]
-TOPIC_PITCH = settings["services"]["mpu"]["topic-pitch"]
-TOPIC_YAW = settings["services"]["mpu"]["topic-yaw"]
+TOPIC_IMU = settings["services"]["mpu"]["topic-imu"]
 TOPIC_TEMP = settings["services"]["bme"]["topic-temp"]
 TOPIC_HUMI = settings["services"]["bme"]["topic-humidity"]
 TOPIC_PRESSURE = settings["services"]["bme"]["topic-pressure"]

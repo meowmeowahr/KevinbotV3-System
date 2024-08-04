@@ -72,8 +72,7 @@ class _Serial:
 class _Com:
     def __init__(self, data: Dict[str, Any]):
         self.tick: str = data.get("tick", "1s")
-        self.topic_batt1: str = data.get("topic-batt1", "kevinbot/battery/batt1")
-        self.topic_batt2: str = data.get("topic-batt2", "kevinbot/battery/batt2")
+        self.topic_batts: str = data.get("topic-batts", "kevinbot/sensors/battery")
         self.topic_sys_uptime: str = data.get("topic-sys-uptime", "kevinbot/uptimes/os")
         self.topic_core_uptime: str = data.get("topic-core-uptime", "kevinbot/uptimes/core")
         self.topic_enabled: str = data.get("topic-enabled", "kevinbot/enabled")

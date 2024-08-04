@@ -93,8 +93,7 @@
         },
         "com": {
             "tick": "0.5s",
-            "topic-batt1": "kevinbot/battery/batt1",
-            "topic-batt2": "kevinbot/battery/batt2",
+            "topic-batts": "kevinbot/sensors/battery",
             "topic-sys-uptime": "kevinbot/uptimes/os",
             "topic-core-uptime": "kevinbot/uptimes/core",
             "topic-enabled": "kevinbot/enabled",
