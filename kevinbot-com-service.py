@@ -200,9 +200,12 @@ def recv_loop():
 
 def head_recv_loop():
     while True:
-        data = head_ser.readline().decode("UTF-8")
+        data = head_ser.readline().decode("UTF-8").strip("\r\n")
         if data.startswith("eyeSettings."):
             remote.send(data)
+        elif data == "handshake.request":
+            head_ser.write(b"getSettings=true\n")
+            head_ser.write(b"handshake.complete\n")
 
 
 def tick():
