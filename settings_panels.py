@@ -1,3 +1,12 @@
+import json
+import os
+import platform
+import socket
+import string
+
+import psutil
+from qtpy.QtCore import Qt, QSize
+from qtpy.QtGui import QPalette, QColor, QPixmap
 from qtpy.QtWidgets import (
     QWidget,
     QLabel,
@@ -10,17 +19,9 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QComboBox,
     QSpinBox)
-from qtpy.QtCore import Qt, QSize
-from qtpy.QtGui import QPalette, QColor, QPixmap
-from KevinbotUI import SwitchControl
-import theme_control
-import socket
-import json
-import psutil
-import os
-import platform
-import string
 
+import theme_control
+from KevinbotUI import SwitchControl
 from system_options import SETTING_COMBOS
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -376,29 +377,17 @@ class ServicesPanel(QScrollArea):
         self.com_layout = QVBoxLayout()
         self.com_item.setLayout(self.com_layout)
 
-        self.b1_layout = QHBoxLayout()
-        self.com_layout.addLayout(self.b1_layout)
+        self.batt_layout = QHBoxLayout()
+        self.com_layout.addLayout(self.batt_layout)
 
-        self.b1_label = QLabel("Battery #1 MQTT Topic")
-        self.b1_layout.addWidget(self.b1_label)
+        self.batt_label = QLabel("Battery MQTT Topic")
+        self.batt_layout.addWidget(self.batt_label)
 
-        self.b1_edit = QLineEdit()
-        self.b1_edit.setMaximumWidth(180)
-        self.b1_edit.setText(str(settings["services"]["com"]["topic-batt1"]))
-        self.b1_edit.textChanged.connect(self.update_b1)
-        self.b1_layout.addWidget(self.b1_edit)
-
-        self.b2_layout = QHBoxLayout()
-        self.com_layout.addLayout(self.b2_layout)
-
-        self.b2_label = QLabel("Battery #2 MQTT Topic")
-        self.b2_layout.addWidget(self.b2_label)
-
-        self.b2_edit = QLineEdit()
-        self.b2_edit.setMaximumWidth(180)
-        self.b2_edit.setText(str(settings["services"]["com"]["topic-batt2"]))
-        self.b2_edit.textChanged.connect(self.update_b2)
-        self.b2_layout.addWidget(self.b2_edit)
+        self.batt_edit = QLineEdit()
+        self.batt_edit.setMaximumWidth(180)
+        self.batt_edit.setText(str(settings["services"]["com"]["topic-batts"]))
+        self.batt_edit.textChanged.connect(self.update_batt)
+        self.batt_layout.addWidget(self.batt_edit)
 
         self.uptime_os_layout = QHBoxLayout()
         self.com_layout.addLayout(self.uptime_os_layout)
@@ -472,13 +461,8 @@ class ServicesPanel(QScrollArea):
         self.layout.addWidget(self.restart_warning)
 
     @staticmethod
-    def update_b1(topic: str):
-        settings["services"]["com"]["topic-batt1"] = topic
-        save_json()
-
-    @staticmethod
-    def update_b2(topic: str):
-        settings["services"]["com"]["topic-batt2"] = topic
+    def update_batt(topic: str):
+        settings["services"]["com"]["topic-batts"] = topic
         save_json()
 
     @staticmethod
