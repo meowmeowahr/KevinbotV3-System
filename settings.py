@@ -87,20 +87,12 @@ class _MPU:
         self.topic_imu: str = data.get("topic-imu", "kevinbot/mpu/data")
 
 
-class _BME:
-    def __init__(self, data: Dict[str, Any]):
-        self.topic_temp: str = data.get("topic-temp", "kevinbot/bme/temperature")
-        self.topic_humidity: str = data.get("topic-humidity", "kevinbot/bme/humidity")
-        self.topic_pressure: str = data.get("topic-pressure", "kevinbot/bme/pressure")
-
-
 class _Services:
     def __init__(self, data: Dict[str, Any]):
         self.mqtt: _MQTT = _MQTT(data.get("mqtt", {}))
         self.serial: _Serial = _Serial(data.get("serial", {}))
         self.com: _Com = _Com(data.get("com", {}))
         self.mpu: _MPU = _MPU(data.get("mpu", {}))
-        self.bme: _BME = _BME(data.get("bme", {}))
 
 
 class SettingsManager:
@@ -128,8 +120,7 @@ class SettingsManager:
                 "mqtt": self.services.mqtt.__dict__,
                 "serial": self.services.serial.__dict__,
                 "com": self.services.com.__dict__,
-                "mpu": self.services.mpu.__dict__,
-                "bme": self.services.bme.__dict__
+                "mpu": self.services.mpu.__dict__
             }
         }
 
