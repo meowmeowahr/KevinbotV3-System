@@ -21,6 +21,7 @@ from qtpy.QtWidgets import (
     QComboBox,
     QSpinBox)
 
+import constants
 import theme_control
 from KevinbotUI import SwitchControl
 from system_options import SETTING_COMBOS
@@ -161,6 +162,13 @@ class SysInfoPanel(QScrollArea):
         self.name.setStyleSheet("font-size: 18px; font-weight: bold;")
         self.name.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout.addWidget(self.name)
+
+        self.h_line = QFrame()
+        self.h_line.setFrameShape(QFrame.Shape.HLine)
+        self.layout.addWidget(self.h_line)
+
+        self.sys_ver = _SysInfoItem("System Version", constants.SYSTEM_VERSION)
+        self.layout.addWidget(self.sys_ver)
 
         self.h_line = QFrame()
         self.h_line.setFrameShape(QFrame.Shape.HLine)
