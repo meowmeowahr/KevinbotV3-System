@@ -3,6 +3,7 @@ import os
 import platform
 import socket
 import string
+from typing import Any
 
 import psutil
 from qtpy.QtCore import Qt, QSize
@@ -63,7 +64,7 @@ class ThemePanel(QWidget):
 
     name = "Theme"
 
-    def __init__(self, parent):
+    def __init__(self, parent: Any):
         super().__init__()
 
         self.parent = parent
