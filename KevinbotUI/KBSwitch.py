@@ -21,9 +21,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from qtpy.QtCore import Qt, QPoint, Slot, Property, QPropertyAnimation, QEasingCurve
-from qtpy.QtWidgets import QWidget, QCheckBox
 from qtpy.QtGui import QPainter, QColor
+from qtpy.QtWidgets import QWidget, QCheckBox
 
 
 def take_closest(num, collection):
@@ -31,7 +32,9 @@ def take_closest(num, collection):
 
 
 class SwitchCircle(QWidget):
-    def __init__(self, parent, move_range: tuple, color, animation_curve, animation_duration):
+    def __init__(
+            self, parent, move_range: tuple, color, animation_curve, animation_duration
+    ):
         super().__init__(parent=parent)
         self.color = color
         self.move_range = move_range
@@ -61,9 +64,9 @@ class SwitchCircle(QWidget):
         delta = event.globalX() - self.oldX
         self.new_x = delta + self.x()
         if self.new_x < self.move_range[0]:
-            self.new_x += (self.move_range[0] - self.new_x)
+            self.new_x += self.move_range[0] - self.new_x
         if self.new_x > self.move_range[1]:
-            self.new_x -= (self.new_x - self.move_range[1])
+            self.new_x -= self.new_x - self.move_range[1]
         self.move(self.new_x, self.y())
         self.oldX = event.globalX()
         return super().mouseMoveEvent(event)
@@ -87,9 +90,17 @@ class SwitchCircle(QWidget):
 
 
 class SwitchControl(QCheckBox):
-    def __init__(self, parent=None, bg_color="#777777", circle_color="#DDD", active_color="#aa00ff",
-                 animation_curve=QEasingCurve.OutBounce, animation_duration=500, checked: bool = False,
-                 change_cursor=True):
+    def __init__(
+            self,
+            parent=None,
+            bg_color="#777777",
+            circle_color="#DDD",
+            active_color="#aa00ff",
+            animation_curve=QEasingCurve.OutBounce,
+            animation_duration=500,
+            checked: bool = False,
+            change_cursor=True,
+    ):
         if parent is None:
             super().__init__()
         else:
@@ -101,8 +112,13 @@ class SwitchControl(QCheckBox):
         self.circle_color = circle_color
         self.animation_curve = animation_curve
         self.animation_duration = animation_duration
-        self.__circle = SwitchCircle(self, (4, self.width() - 28), self.circle_color, self.animation_curve,
-                                     self.animation_duration)
+        self.__circle = SwitchCircle(
+            self,
+            (4, self.width() - 28),
+            self.circle_color,
+            self.animation_curve,
+            self.animation_duration,
+        )
         self.__circle_position = 3
         self.active_color = active_color
         self.auto = False
@@ -176,10 +192,14 @@ class SwitchControl(QCheckBox):
         painter.setPen(Qt.PenStyle.NoPen)
         if not self.isChecked():
             painter.setBrush(QColor(self.bg_color))
-            painter.drawRoundedRect(0, 0, self.width(), self.height(), self.height() / 2, self.height() / 2)
+            painter.drawRoundedRect(
+                0, 0, self.width(), self.height(), self.height() / 2, self.height() / 2
+            )
         elif self.isChecked():
             painter.setBrush(QColor(self.active_color))
-            painter.drawRoundedRect(0, 0, self.width(), self.height(), self.height() / 2, self.height() / 2)
+            painter.drawRoundedRect(
+                0, 0, self.width(), self.height(), self.height() / 2, self.height() / 2
+            )
 
     def hitButton(self, pos):
         return self.contentsRect().contains(pos)

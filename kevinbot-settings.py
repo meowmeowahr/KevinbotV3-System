@@ -1,12 +1,21 @@
-from qtpy.QtWidgets import *
-from qtpy.QtCore import *
-from qtpy.QtGui import *
-from KevinbotUI import KBTheme
-from settings_panels import ThemePanel, SysInfoPanel, CommsPanel, ServicesPanel, settings, save_json
 import os
 import sys
+
 import qtawesome as qta
+from qtpy.QtCore import *
+from qtpy.QtGui import *
+from qtpy.QtWidgets import *
+
 import theme_control
+from KevinbotUI import KBTheme
+from settings_panels import (
+    ThemePanel,
+    SysInfoPanel,
+    CommsPanel,
+    ServicesPanel,
+    settings,
+    save_json,
+)
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -41,13 +50,15 @@ class MainWindow(QMainWindow):
         self.item_layout = QVBoxLayout()
 
         # items
-        
+
         self.theme_button = QToolButton()
         self.theme_button.setObjectName("Kevinbot3_Settings_Panel_Button")
         self.theme_button.setText(" " + ThemePanel.name)
         self.theme_button.setIconSize(QSize(24, 24))
         self.theme_button.setFixedWidth(180)
-        self.theme_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.theme_button.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        )
         self.theme_button.clicked.connect(lambda: self.set_page(THEME_PANEL_INDEX))
         self.item_layout.addWidget(self.theme_button)
 
@@ -56,7 +67,9 @@ class MainWindow(QMainWindow):
         self.comms_button.setText(" " + CommsPanel.name)
         self.comms_button.setIconSize(QSize(24, 24))
         self.comms_button.setFixedWidth(180)
-        self.comms_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.comms_button.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        )
         self.comms_button.clicked.connect(lambda: self.set_page(COMMS_PANEL_INDEX))
         self.item_layout.addWidget(self.comms_button)
 
@@ -65,8 +78,12 @@ class MainWindow(QMainWindow):
         self.services_button.setText(" " + ServicesPanel.name)
         self.services_button.setIconSize(QSize(24, 24))
         self.services_button.setFixedWidth(180)
-        self.services_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.services_button.clicked.connect(lambda: self.set_page(SERVICES_PANEL_INDEX))
+        self.services_button.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        )
+        self.services_button.clicked.connect(
+            lambda: self.set_page(SERVICES_PANEL_INDEX)
+        )
         self.item_layout.addWidget(self.services_button)
 
         self.sysinfo_button = QToolButton()
@@ -74,7 +91,9 @@ class MainWindow(QMainWindow):
         self.sysinfo_button.setText(" " + SysInfoPanel.name)
         self.sysinfo_button.setIconSize(QSize(24, 24))
         self.sysinfo_button.setFixedWidth(180)
-        self.sysinfo_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.sysinfo_button.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        )
         self.sysinfo_button.clicked.connect(lambda: self.set_page(SYSINFO_PANEL_INDEX))
         self.item_layout.addWidget(self.sysinfo_button)
 
@@ -104,7 +123,7 @@ class MainWindow(QMainWindow):
         self.theme_panel = ThemePanel(self)
         self.theme_panel.theme_select_switch.stateChanged.connect(self.update_icons)
         self.stacked_widget.insertWidget(THEME_PANEL_INDEX, self.theme_panel)
-        
+
         self.sysinfo_panel = SysInfoPanel(self)
         self.stacked_widget.insertWidget(SYSINFO_PANEL_INDEX, self.sysinfo_panel)
 
@@ -126,10 +145,34 @@ class MainWindow(QMainWindow):
             KBTheme.load(self, app, mode=KBTheme.Modes.Light)
         self.ensurePolished()
 
-        self.theme_button.setIcon(QIcon(qta.icon("fa5s.paint-roller", color=self.palette().buttonText().color().name())))
-        self.sysinfo_button.setIcon(QIcon(qta.icon("fa5s.microchip", color=self.palette().buttonText().color().name())))
-        self.comms_button.setIcon(QIcon(qta.icon("mdi.transit-connection-variant", color=self.palette().buttonText().color().name())))
-        self.services_button.setIcon(QIcon(qta.icon("mdi.cogs", color=self.palette().buttonText().color().name())))
+        self.theme_button.setIcon(
+            QIcon(
+                qta.icon(
+                    "fa5s.paint-roller",
+                    color=self.palette().buttonText().color().name(),
+                )
+            )
+        )
+        self.sysinfo_button.setIcon(
+            QIcon(
+                qta.icon(
+                    "fa5s.microchip", color=self.palette().buttonText().color().name()
+                )
+            )
+        )
+        self.comms_button.setIcon(
+            QIcon(
+                qta.icon(
+                    "mdi.transit-connection-variant",
+                    color=self.palette().buttonText().color().name(),
+                )
+            )
+        )
+        self.services_button.setIcon(
+            QIcon(
+                qta.icon("mdi.cogs", color=self.palette().buttonText().color().name())
+            )
+        )
 
     def set_page(self, page: int):
         self.stacked_widget.setCurrentIndex(page)

@@ -3,10 +3,9 @@ Paho-Mqtt Client for use in Qt
 Supports MqttV5 and Kevinbot-specific features
 """
 
-from qtpy.QtCore import Property, QObject, Signal, Slot
 import paho.mqtt.client as mqtt
-
 from loguru import logger
+from qtpy.QtCore import Property, QObject, Signal, Slot
 
 
 class MqttClient(QObject):

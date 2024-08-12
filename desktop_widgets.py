@@ -5,8 +5,14 @@ from typing import Any
 
 import qtawesome as qta
 from qtpy.QtCore import Qt, QSize, QTimer
-from qtpy.QtWidgets import (QFrame, QHBoxLayout, QVBoxLayout, QPushButton,
-                            QLabel, QBoxLayout)
+from qtpy.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QVBoxLayout,
+    QPushButton,
+    QLabel,
+    QBoxLayout,
+)
 
 import theme_control
 from KevinbotUI import KBTheme
@@ -14,12 +20,17 @@ from kevinbot_qt_mqtt import MqttClient
 from settings import SettingsManager
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
+SETTINGS_PATH = os.path.join(CURRENT_DIR, "settings.json")
 settings = SettingsManager(SETTINGS_PATH)
 
 
 class BaseWidget(QFrame):
-    def __init__(self, add=False, data: dict[str, Any] | None = None, mqtt_client: MqttClient | None = None):
+    def __init__(
+            self,
+            add=False,
+            data: dict[str, Any] | None = None,
+            mqtt_client: MqttClient | None = None,
+    ):
         super().__init__()
         if data is None:
             data: dict[str, Any] = {"type": "base", "uuid": str(uuid.uuid4())}
@@ -55,22 +66,19 @@ class BaseWidget(QFrame):
             self.top_bar.addWidget(self.add_button)
         else:
             self.up_button = QPushButton()
-            self.up_button.setIcon(qta.icon("mdi.arrow-up",
-                                            color=self.fg_color))
+            self.up_button.setIcon(qta.icon("mdi.arrow-up", color=self.fg_color))
             self.up_button.setFixedSize(QSize(24, 24))
             self.up_button.setIconSize(QSize(24, 24))
             self.top_bar.addWidget(self.up_button)
 
             self.down_button = QPushButton()
-            self.down_button.setIcon(qta.icon("mdi.arrow-down",
-                                              color=self.fg_color))
+            self.down_button.setIcon(qta.icon("mdi.arrow-down", color=self.fg_color))
             self.down_button.setFixedSize(QSize(24, 24))
             self.down_button.setIconSize(QSize(24, 24))
             self.top_bar.addWidget(self.down_button)
 
             self.remove_button = QPushButton()
-            self.remove_button.setIcon(qta.icon("mdi.close",
-                                                color=self.fg_color))
+            self.remove_button.setIcon(qta.icon("mdi.close", color=self.fg_color))
             self.remove_button.setFixedSize(QSize(24, 24))
             self.remove_button.setIconSize(QSize(24, 24))
             self.top_bar.addWidget(self.remove_button)
@@ -121,8 +129,7 @@ class ClockWidget(BaseWidget):
 
     def update_time(self):
         self.time.setText(datetime.datetime.now().strftime("%I:%M %p").upper())
-        self.date.setText(datetime.datetime.now()
-                          .strftime("%d, %b %Y").upper())
+        self.date.setText(datetime.datetime.now().strftime("%d, %b %Y").upper())
 
 
 class Clock24Widget(BaseWidget):
@@ -158,8 +165,7 @@ class Clock24Widget(BaseWidget):
 
     def update_time(self):
         self.time.setText(datetime.datetime.now().strftime("%H:%M:%S").upper())
-        self.date.setText(datetime.datetime.now()
-                          .strftime("%d, %b %Y").upper())
+        self.date.setText(datetime.datetime.now().strftime("%d, %b %Y").upper())
 
 
 class EnaWidget(BaseWidget):
@@ -249,16 +255,24 @@ class BattWidget(BaseWidget):
 
     def message_slot(self, topic: str, payload: str):
         if settings.services.com.topic_batts in topic:
-            self.batt1_voltage, self.batt2_voltage = map(float, payload.split(",", maxsplit=1))
+            self.batt1_voltage, self.batt2_voltage = map(
+                float, payload.split(",", maxsplit=1)
+            )
 
         if settings.battery.enable_two:
-            self.b1.setText(f"Battery #1 Voltage: \
-                            <b>{self.batt1_voltage}v</b>")
-            self.b2.setText(f"Battery #2 Voltage: \
-                            <b>{self.batt2_voltage}v</b>")
+            self.b1.setText(
+                f"Battery #1 Voltage: \
+                            <b>{self.batt1_voltage}v</b>"
+            )
+            self.b2.setText(
+                f"Battery #2 Voltage: \
+                            <b>{self.batt2_voltage}v</b>"
+            )
         else:
-            self.b1.setText(f"Battery Voltage: \
-                            <b>{self.batt1_voltage}v</b>")
+            self.b1.setText(
+                f"Battery Voltage: \
+                            <b>{self.batt1_voltage}v</b>"
+            )
 
 
 class EmptyWidget(QFrame):

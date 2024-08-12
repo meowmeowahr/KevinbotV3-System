@@ -12,6 +12,9 @@ class _SysInfo:
 class _Settings:
     def __init__(self, data: Dict[str, Any]):
         self.page: int = data.get("page", 4)
+        self.artwork: str = data.get(
+            "artwork", "/usr/share/kevinbot-artwork/wallpapers/"
+        )
 
 
 class _Logging:
@@ -37,7 +40,9 @@ class _Battery:
         self.enable_two: bool = data.get("enable_two", True)
         self.cutoff_voltages: List[float] = data.get("cutoff_voltages", [8.0, 16.8])
         self.warn_voltages: List[float] = data.get("warn_voltages", [10.5, 17.2])
-        self.warn_sound: Literal["repeat", "once", "never"] | str = data.get("warn_sound", "once")
+        self.warn_sound: Literal["repeat", "once", "never"] | str = data.get(
+            "warn_sound", "once"
+        )
 
 
 class _LightingSection:
@@ -74,7 +79,9 @@ class _Com:
         self.tick: str = data.get("tick", "1s")
         self.topic_batts: str = data.get("topic-batts", "kevinbot/sensors/battery")
         self.topic_sys_uptime: str = data.get("topic-sys-uptime", "kevinbot/uptimes/os")
-        self.topic_core_uptime: str = data.get("topic-core-uptime", "kevinbot/uptimes/core")
+        self.topic_core_uptime: str = data.get(
+            "topic-core-uptime", "kevinbot/uptimes/core"
+        )
         self.topic_enabled: str = data.get("topic-enabled", "kevinbot/enabled")
         self.data_max: int = data.get("data_max", 50)
 
@@ -96,7 +103,7 @@ class _Services:
 
 
 class SettingsManager:
-    def __init__(self, filepath: str = 'settings.json'):
+    def __init__(self, filepath: str = "settings.json"):
         self.services: _Services | None = None
         self.servo: _Servos | None = None
         self.battery: _Battery | None = None
@@ -120,13 +127,13 @@ class SettingsManager:
                 "mqtt": self.services.mqtt.__dict__,
                 "serial": self.services.serial.__dict__,
                 "com": self.services.com.__dict__,
-                "mpu": self.services.mpu.__dict__
-            }
+                "mpu": self.services.mpu.__dict__,
+            },
         }
 
     def load(self) -> None:
         try:
-            with open(self.filepath, 'r') as file:
+            with open(self.filepath, "r") as file:
                 data = json.load(file)
         except FileNotFoundError:
             data = {}
@@ -139,7 +146,7 @@ class SettingsManager:
         self.services = _Services(data.get("services", {}))
 
     def save(self) -> None:
-        with open(self.filepath, 'w') as file:
+        with open(self.filepath, "w") as file:
             json.dump(self._get_data(), file, indent=4)
 
     def __repr__(self):

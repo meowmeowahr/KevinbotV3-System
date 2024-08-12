@@ -1,21 +1,28 @@
-from qtpy.QtWidgets import *
 from qtpy.QtCore import *
 from qtpy.QtGui import *
+from qtpy.QtWidgets import *
 
 
 class AboutBox(QWidget):
-    def __init__(self, author="Unknown", appname="Unknown", version="Unknown", icondir=None, bigicon=None):
+    def __init__(
+            self,
+            author="Unknown",
+            appname="Unknown",
+            version="Unknown",
+            icondir=None,
+            bigicon=None,
+    ):
         super().__init__()
         self.setWindowTitle("About " + appname)
         self.setWindowIcon(QIcon(icondir))
         self.setObjectName("main")
 
         self.layout = QVBoxLayout()
-        
+
         self.icon_layout = QHBoxLayout()
-        self.icon_layout.setContentsMargins(0,0,0,0)
+        self.icon_layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addLayout(self.icon_layout)
-        
+
         self.app_icon = QLabel()
         self.app_icon.setObjectName("app_icon")
         self.app_icon.setPixmap(QPixmap(bigicon))

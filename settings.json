@@ -3,7 +3,8 @@
         "interval": 2
     },
     "settings": {
-        "page": 2
+        "page": 2,
+        "artwork": "/usr/share/kevinbot-artwork/wallpapers/"
     },
     "logging": {
         "level": 5

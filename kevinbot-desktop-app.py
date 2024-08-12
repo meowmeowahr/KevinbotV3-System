@@ -1,36 +1,42 @@
-import sys
-import os
-import json
 import functools
+import json
+import os
+import sys
 
-from qtpy.QtWidgets import (QApplication, QMainWindow, QDialog, QWidget,
-                            QVBoxLayout, QLabel, QScrollArea)
 from qtpy.QtCore import Qt, QTimer
 from qtpy.QtGui import QMoveEvent, QCloseEvent
+from qtpy.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QDialog,
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QScrollArea,
+)
 
-from KevinbotUI import KBTheme
-import theme_control
 import desktop_widgets
-
+import theme_control
+from KevinbotUI import KBTheme
 from kevinbot_qt_mqtt import MqttClient
 from system_options import BROKER, PORT
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-SETTINGS_PATH = os.path.join(CURRENT_DIR, 'widgets.json')
+SETTINGS_PATH = os.path.join(CURRENT_DIR, "widgets.json")
 
-settings = json.load(open(SETTINGS_PATH, 'r'))
+settings = json.load(open(SETTINGS_PATH, "r"))
 
 WIDGET_TYPES = {
     "base": desktop_widgets.BaseWidget,
     "clock": desktop_widgets.ClockWidget,
     "clock24": desktop_widgets.Clock24Widget,
     "enable": desktop_widgets.EnaWidget,
-    "batt": desktop_widgets.BattWidget
+    "batt": desktop_widgets.BattWidget,
 }
 
 
 def save_json():
-    with open(SETTINGS_PATH, 'w') as f:
+    with open(SETTINGS_PATH, "w") as f:
         json.dump(settings, f, indent=4)
 
 
@@ -47,8 +53,11 @@ class DockWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
-                            | Qt.WindowType.WindowStaysOnBottomHint)
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.Tool
+            | Qt.WindowType.WindowStaysOnBottomHint
+        )
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
@@ -63,8 +72,9 @@ class DockWindow(QMainWindow):
         self.reposition_timer = QTimer()
 
         self.screen = app.primaryScreen()
-        self.screen.geometryChanged.connect(lambda: self.reposition_timer.
-                                            singleShot(1200, self.reposition))
+        self.screen.geometryChanged.connect(
+            lambda: self.reposition_timer.singleShot(1200, self.reposition)
+        )
 
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
@@ -90,11 +100,14 @@ class DockWindow(QMainWindow):
         for item in settings["order"]:
             widget = WIDGET_TYPES[item["type"]](data=item, mqtt_client=self.client)
             widget.up_button.clicked.connect(
-                functools.partial(self.move_widget_up, widget))
+                functools.partial(self.move_widget_up, widget)
+            )
             widget.down_button.clicked.connect(
-                functools.partial(self.move_widget_down, widget))
+                functools.partial(self.move_widget_down, widget)
+            )
             widget.remove_button.clicked.connect(
-                functools.partial(self.widget_del, widget))
+                functools.partial(self.widget_del, widget)
+            )
             self.main_layout.addWidget(widget)
 
         self.empty_widget = desktop_widgets.EmptyWidget()
@@ -182,34 +195,37 @@ class AddWindow(QDialog):
 
         self.add_clock_widget = desktop_widgets.ClockWidget(add=True)
         self.add_clock_widget.add_button.clicked.connect(
-            lambda: self.add_widget(desktop_widgets.ClockWidget()))
+            lambda: self.add_widget(desktop_widgets.ClockWidget())
+        )
         self.scroll_layout.addWidget(self.add_clock_widget)
 
         self.add_clock24_widget = desktop_widgets.Clock24Widget(add=True)
         self.add_clock24_widget.add_button.clicked.connect(
-            lambda: self.add_widget(desktop_widgets.Clock24Widget()))
+            lambda: self.add_widget(desktop_widgets.Clock24Widget())
+        )
         self.scroll_layout.addWidget(self.add_clock24_widget)
 
         self.add_enable_status_widget = desktop_widgets.EnaWidget(add=True)
         self.add_enable_status_widget.add_button.clicked.connect(
-            lambda: self.add_widget(desktop_widgets.EnaWidget()))
+            lambda: self.add_widget(desktop_widgets.EnaWidget())
+        )
         self.scroll_layout.addWidget(self.add_enable_status_widget)
 
         self.add_batt_status_widget = desktop_widgets.BattWidget(add=True)
         self.add_batt_status_widget.add_button.clicked.connect(
-            lambda: self.add_widget(desktop_widgets.BattWidget()))
+            lambda: self.add_widget(desktop_widgets.BattWidget())
+        )
         self.scroll_layout.addWidget(self.add_batt_status_widget)
 
         self.show()
 
     @staticmethod
     def add_widget(widget: desktop_widgets.BaseWidget):
-        widget.up_button.clicked.connect(
-            functools.partial(dock.move_widget_up, widget))
+        widget.up_button.clicked.connect(functools.partial(dock.move_widget_up, widget))
         widget.down_button.clicked.connect(
-            functools.partial(dock.move_widget_down, widget))
-        widget.remove_button.clicked.connect(
-            functools.partial(dock.widget_del, widget))
+            functools.partial(dock.move_widget_down, widget)
+        )
+        widget.remove_button.clicked.connect(functools.partial(dock.widget_del, widget))
         dock.main_layout.addWidget(widget)
         dock.empty_widget.setVisible(False)
         reload_settings()

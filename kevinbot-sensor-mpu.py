@@ -15,14 +15,14 @@ from imusensor.MPU9250 import MPU9250
 from paho.mqtt import client as mqtt_client
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-SETTINGS_PATH = os.path.join(CURRENT_DIR, 'settings.json')
+SETTINGS_PATH = os.path.join(CURRENT_DIR, "settings.json")
 
-settings = json.load(open(SETTINGS_PATH, 'r'))
+settings = json.load(open(SETTINGS_PATH, "r"))
 
 BROKER = settings["services"]["mqtt"]["address"]
 PORT = settings["services"]["mqtt"]["port"]
 TOPIC_IMU = settings["services"]["mpu"]["topic-imu"]
-CLI_ID = f'kevinbot-mpu-{uuid.uuid4()}'
+CLI_ID = f"kevinbot-mpu-{uuid.uuid4()}"
 
 
 def on_connect(_, __, ___, rc):
@@ -53,7 +53,9 @@ def loop():
         imu.computeOrientation()
 
         # publish over mqtt
-        publish(TOPIC_IMU, f"{round(imu.roll, 2)},{round(imu.pitch, 2)},{round(imu.yaw, 2)}")
+        publish(
+            TOPIC_IMU, f"{round(imu.roll, 2)},{round(imu.pitch, 2)},{round(imu.yaw, 2)}"
+        )
 
         # wait
         time.sleep(delay)

@@ -1,6 +1,7 @@
 """
 Interface for Kevinbot Remote over XBee
 """
+
 import enum
 from typing import Callable, Optional
 
@@ -59,7 +60,13 @@ class RemoteCommand(enum.StrEnum):
 
 
 class RemoteInterface:
-    def __init__(self, port: str, baud: int, callback: Optional[Callable] = None, escaped: bool = False):
+    def __init__(
+            self,
+            port: str,
+            baud: int,
+            callback: Optional[Callable] = None,
+            escaped: bool = False,
+    ):
         self.port = port
         self.baud = baud
 
@@ -72,17 +79,26 @@ class RemoteInterface:
         logger.log("DATA", f"Got XBee frame {data}")
 
         if "rf_data" not in data.keys():
-            return {"raw": "".encode("utf-8"), "status": "no_rf_data", "command": RemoteCommand.NoCommand, "value": ""}
+            return {
+                "raw": "".encode("utf-8"),
+                "status": "no_rf_data",
+                "command": RemoteCommand.NoCommand,
+                "value": "",
+            }
 
-        cv = data['rf_data'].decode().strip("\r\n").split('=', 1)
+        cv = data["rf_data"].decode().strip("\r\n").split("=", 1)
 
         if len(cv) == 1:
             value = ""
         else:
             value = cv[1]
 
-        return {"raw": data['rf_data'], "status": "ok", "command": RemoteCommand(cv[0]), "value": value}
+        return {
+            "raw": data["rf_data"],
+            "status": "ok",
+            "command": RemoteCommand(cv[0]),
+            "value": value,
+        }
 
     def send(self, data: str):
-        self.xbee.send("tx", dest_addr=b'\x00\x00',
-                       data=bytes(data, 'utf-8'))
+        self.xbee.send("tx", dest_addr=b"\x00\x00", data=bytes(data, "utf-8"))
