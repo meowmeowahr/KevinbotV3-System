@@ -474,6 +474,20 @@ class ServicesPanel(QScrollArea):
         self.mpu_addr_spin.valueChanged.connect(self.update_mpu_addr)
         self.mpu_addr_layout.addWidget(self.mpu_addr_spin)
 
+        self.mpu_hz_layout = QHBoxLayout()
+        self.mpu_layout.addLayout(self.mpu_hz_layout)
+
+        self.mpu_hz_label = QLabel("Update Rate")
+        self.mpu_hz_layout.addWidget(self.mpu_hz_label)
+
+        self.mpu_hz_spin = QSpinBox()
+        self.mpu_hz_spin.setSuffix("Hz")
+        self.mpu_hz_spin.setRange(1, 60)
+        self.mpu_hz_spin.setAccelerated(True)
+        self.mpu_hz_spin.setValue(1 // settings["services"]["mpu"]["update-speed"])
+        self.mpu_hz_spin.valueChanged.connect(self.update_mpu_hz)
+        self.mpu_hz_layout.addWidget(self.mpu_hz_spin)
+
         self.toolbox.addItem(self.mpu_item, "MPU9250 Service")
 
         self.restart_warning = QLabel(
@@ -509,4 +523,9 @@ class ServicesPanel(QScrollArea):
     @staticmethod
     def update_mpu_addr(value: str):
         settings["services"]["mpu"]["address"] = value
+        save_json()
+
+    @staticmethod
+    def update_mpu_hz(value: int):
+        settings["services"]["mpu"]["update-speed"] = 1 / value
         save_json()
