@@ -48,6 +48,7 @@ class CurrentStateManager:
     core_alive: bool = True
     core_uptime: int = 0
     core_uptime_ms: int = 0
+    sys_tick_speed: int | None = None
     battery_notifications_displayed: list[bool] = dataclass_field(
         default_factory=lambda: [False, False]
     )
@@ -476,7 +477,6 @@ def remote_recv(data):
                 RobotRequestEnableCommand(enabled, p2_ser, remote, current_state)
             )
             command_queue.add_command(FunctionCommand(lambda: set_enabled(enabled)))
-            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif command == RemoteCommand.RemoteListAdd:
             if value not in current_state.connected_remotes:
                 current_state.connected_remotes.append(value)
@@ -604,6 +604,8 @@ if __name__ == "__main__":
     print("\033[0m", end=None)
 
     current_state = CurrentStateManager()
+    if settings.services.com.tick.lower().strip("s").lower() != "core":
+        current_state.sys_tick_speed = float(settings.services.com.tick.lower().strip("s"))
 
     # logging
     logger.remove()

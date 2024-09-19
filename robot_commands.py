@@ -104,6 +104,9 @@ class RemoteHandshakeCommand(_BaseCommand):
         self.interface.send(
             f"lighting.base.bright={self.current_state.lighting_base_brightness}"
         )
+        self.interface.send(
+            f"system.tick.speed={self.current_state.sys_tick_speed}"
+        )
 
         mesh = [
                    f"KEVINBOTV3|{self.version}|kevinbot.kevinbot"
