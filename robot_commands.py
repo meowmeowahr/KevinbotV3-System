@@ -142,18 +142,8 @@ class RobotRequestEnableCommand(_BaseCommand):
             self.remote.send(f"kevinbot.enableFailed={int(self.ena)}")
             return
 
-        if not self.ena == self.current_state.enabled:
-            logger.info(f"Enabled: {self.ena}")
-            self.core.write(f"kevinbot.tryenable={int(self.ena)}\n".encode("utf-8"))
-
-            if not self.ena:
-                # On disable
-                self.core.write("head_effect=color1\n".encode("utf-8"))
-                self.core.write("body_effect=color1\n".encode("utf-8"))
-                self.core.write("base_effect=color1\n".encode("utf-8"))
-                self.core.write("head_color1=000000\n".encode("utf-8"))
-                self.core.write("body_color1=000000\n".encode("utf-8"))
-                self.core.write("base_color1=000000\n".encode("utf-8"))
+        logger.info(f"Enabled: {self.ena}")
+        self.core.write(f"kevinbot.tryenable={int(self.ena)}\n".encode("utf-8"))
 
 
 class RemoteEnableCommand(_BaseCommand):

@@ -56,8 +56,7 @@ class RemoteCommand(enum.StrEnum):
     HeadXPosition = "head.position.x"
     HeadYPosition = "head.position.y"
 
-    DriveLeft = "drivebase.left"
-    DriveRight = "drivebase.right"
+    Drive = "drive"
 
     NoCommand = ""
 

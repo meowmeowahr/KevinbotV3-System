@@ -202,7 +202,6 @@ def recv_loop():
             command_queue.add_command(
                 FunctionCommand(lambda: set_enabled(line[1].lower() in ["true", "t"]))
             )
-            command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif line[0] == "core.error":
             if not line[1].isdigit():
                 logger.warning(f"Got non-digit value for core.error(0), {line[1]}")
@@ -476,7 +475,9 @@ def remote_recv(data):
             command_queue.add_command(
                 RobotRequestEnableCommand(enabled, p2_ser, remote, current_state)
             )
-            command_queue.add_command(FunctionCommand(lambda: set_enabled(enabled)))
+            previous_enabled = current_state.enabled
+            if enabled != previous_enabled:
+                command_queue.add_command(WavCommand("sounds/enable.wav"))
         elif command == RemoteCommand.RemoteListAdd:
             if value not in current_state.connected_remotes:
                 current_state.connected_remotes.append(value)
@@ -502,11 +503,17 @@ def remote_recv(data):
                 current_state.connected_remotes.remove(value)
                 logger.info(f"Wireless device disconnected: {value}")
             logger.info(f"Total devices: {current_state.connected_remotes}")
+            command_queue.add_command(
+                RobotRequestEnableCommand(False, p2_ser, remote, current_state)
+            )
         elif command == RemoteCommand.NewDeviceDisconnect:
             if value in current_state.connected_remotes:
                 current_state.connected_remotes.remove(value)
                 logger.info(f"Wireless device disconnected: {value}")
             logger.info(f"Total devices: {current_state.connected_remotes}")
+            command_queue.add_command(
+                RobotRequestEnableCommand(False, p2_ser, remote, current_state)
+            )
         elif command == RemoteCommand.RemoteListFetch:
             transmit_full_remote_list()
         elif command == RemoteCommand.Ping:
@@ -516,6 +523,8 @@ def remote_recv(data):
                 subprocess.run(
                     ["notify-send", "Ping!", f"Ping from {data[1].split(',')[1]}"]
                 )
+        elif command == RemoteCommand.Drive:
+            p2_ser.write(f"drive.power={value}\n".encode("utf-8"))
 
         # print("time", [t-times[0] for t in times])
     except Exception as e:

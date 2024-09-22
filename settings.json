@@ -7,7 +7,7 @@
         "artwork": "/usr/share/kevinbot-artwork/wallpapers/"
     },
     "logging": {
-        "level": 5
+      "level": 0
     },
     "servos": {
         "mappings": {
@@ -141,7 +141,7 @@
             "head-port": "/dev/ttyUSB0"
         },
         "com": {
-            "tick": "0.5s",
+          "tick": "1s",
             "topic-batts": "kevinbot/sensors/battery",
             "topic-sys-uptime": "kevinbot/uptimes/os",
             "topic-core-uptime": "kevinbot/uptimes/core",
